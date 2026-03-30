@@ -76,9 +76,44 @@ export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 
 ## Installation
 
+**With Make (recommended):**
+
 ```bash
+make setup
+source .venv/bin/activate
+```
+
+`make setup` creates a `.venv`, installs all dependencies, and prints next steps.
+
+**Manually:**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 ```
+
+**Copy and edit the env file:**
+
+```bash
+cp .env.example .env
+# edit .env — set OLLAMA_BASE_URL to your Ollama host IP
+```
+
+Then load it before running commands:
+
+```bash
+export $(grep -v '^#' .env | xargs)
+```
+
+**Available Make targets:**
+
+| Target | Description |
+|---|---|
+| `make setup` | Create venv and install dependencies |
+| `make venv` | Create venv only |
+| `make install` | Install into existing venv |
+| `make clean` | Remove venv and build artifacts |
 
 ## Indexing
 
