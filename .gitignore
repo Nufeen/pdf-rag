@@ -1,6 +1,9 @@
 # Plan
 PLAN.md
 
+# Environment
+.env
+
 # Python
 __pycache__/
 *.py[cod]
