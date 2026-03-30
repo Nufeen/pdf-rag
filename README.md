@@ -108,12 +108,12 @@ export $(grep -v '^#' .env | xargs)
 
 **Available Make targets:**
 
-| Target | Description |
-|---|---|
-| `make setup` | Create venv and install dependencies |
-| `make venv` | Create venv only |
-| `make install` | Install into existing venv |
-| `make clean` | Remove venv and build artifacts |
+| Target         | Description                          |
+| -------------- | ------------------------------------ |
+| `make setup`   | Create venv and install dependencies |
+| `make venv`    | Create venv only                     |
+| `make install` | Install into existing venv           |
+| `make clean`   | Remove venv and build artifacts      |
 
 ## Indexing
 
@@ -208,3 +208,16 @@ pdf-rag index ~/Books/ --force
 | `RAG_TOP_K`         | `5`                      | Chunks retrieved per query                             |
 
 All variables can also be passed as CLI flags — run `pdf-rag index --help` or `pdf-rag ask --help` for details.
+
+## Customizing the System Prompt
+
+The LLM system prompt lives in `prompt.txt` at the project root. Edit it directly to change how the model answers — for example, to adjust tone, citation format, or add domain-specific instructions:
+
+```
+You are a research assistant. Answer the user's question using ONLY the provided context excerpts from PDF books.
+For each statement you make, cite the source as [Book: <filename>, Page: <page_num>].
+If the context does not contain enough information to answer the question, say so explicitly.
+Do not use any knowledge outside the provided excerpts.
+```
+
+Changes take effect immediately on the next `pdf-rag ask` — no reinstall needed. If `prompt.txt` is missing, the tool falls back to the default prompt above.

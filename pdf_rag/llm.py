@@ -1,13 +1,21 @@
+from pathlib import Path
+
 from ollama import Client
 
 from .config import LLM_MODEL, OLLAMA_BASE_URL
 
-SYSTEM_PROMPT = (
-    "You are a research assistant. Answer the user's question using ONLY the provided context "
-    "excerpts from PDF books. For each statement you make, cite the source as "
-    "[Book: <filename>, Page: <page_num>]. If the context does not contain enough information "
-    "to answer the question, say so explicitly. Do not use any knowledge outside the provided excerpts."
-)
+_PROMPT_FILE = Path(__file__).parent.parent / "prompt.txt"
+
+
+def _load_system_prompt() -> str:
+    if _PROMPT_FILE.exists():
+        return _PROMPT_FILE.read_text().strip()
+    return (
+        "You are a research assistant. Answer the user's question using ONLY the provided context "
+        "excerpts from PDF books. For each statement you make, cite the source as "
+        "[Book: <filename>, Page: <page_num>]. If the context does not contain enough information "
+        "to answer the question, say so explicitly. Do not use any knowledge outside the provided excerpts."
+    )
 
 
 def build_context(chunks: list[dict]) -> str:
@@ -36,7 +44,7 @@ def generate_answer(
     stream = client.chat(
         model=llm_model,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": _load_system_prompt()},
             {"role": "user", "content": user_message},
         ],
         stream=True,
