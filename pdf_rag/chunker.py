@@ -1,5 +1,8 @@
 def split_text(text: str, chunk_size: int, overlap: int) -> list[str]:
     """Recursively split text into chunks of approximately chunk_size characters with overlap."""
+    if overlap >= chunk_size:
+        raise ValueError(f"overlap ({overlap}) must be less than chunk_size ({chunk_size})")
+
     separators = ["\n\n", "\n", ". ", " ", ""]
 
     def _split(text: str, separators: list[str]) -> list[str]:

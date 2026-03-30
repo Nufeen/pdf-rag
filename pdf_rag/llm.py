@@ -41,15 +41,19 @@ def generate_answer(
     )
 
     client = Client(host=base_url)
-    stream = client.chat(
-        model=llm_model,
-        messages=[
-            {"role": "system", "content": _load_system_prompt()},
-            {"role": "user", "content": user_message},
-        ],
-        stream=True,
-    )
-
-    for part in stream:
-        print(part["message"]["content"], end="", flush=True)
-    print()
+    try:
+        stream = client.chat(
+            model=llm_model,
+            messages=[
+                {"role": "system", "content": _load_system_prompt()},
+                {"role": "user", "content": user_message},
+            ],
+            stream=True,
+        )
+        for part in stream:
+            print(part["message"]["content"], end="", flush=True)
+        print()
+    except Exception as e:
+        if "connection" in str(e).lower() or "refused" in str(e).lower():
+            raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?")
+        raise

@@ -1,6 +1,7 @@
 import hashlib
 from pathlib import Path
 
+import chromadb
 import fitz  # PyMuPDF
 import requests
 from tqdm import tqdm
@@ -26,13 +27,12 @@ def compute_file_hash(path: str) -> str:
 
 
 def extract_pages(pdf_path: str) -> list[dict]:
-    doc = fitz.open(pdf_path)
     pages = []
-    for page_num, page in enumerate(doc, start=1):
-        text = page.get_text("text")
-        if len(text.strip()) > 100:
-            pages.append({"page_num": page_num, "text": text})
-    doc.close()
+    with fitz.open(pdf_path) as doc:
+        for page_num, page in enumerate(doc, start=1):
+            text = page.get_text("text")
+            if len(text.strip()) > 100:
+                pages.append({"page_num": page_num, "text": text})
     return pages
 
 
@@ -61,8 +61,6 @@ def index_folder(
     base_url: str = OLLAMA_BASE_URL,
     force: bool = False,
 ) -> None:
-    import chromadb
-
     client = chromadb.PersistentClient(path=db_path)
     collection = client.get_or_create_collection(
         COLLECTION_NAME,
@@ -117,13 +115,16 @@ def index_folder(
         embeddings = []
         for i in tqdm(range(0, len(texts), EMBED_BATCH_SIZE), unit="batch", leave=False):
             batch = texts[i : i + EMBED_BATCH_SIZE]
-            resp = requests.post(
-                f"{base_url}/api/embed",
-                json={"model": embed_model, "input": batch},
-                timeout=120,
-            )
-            resp.raise_for_status()
-            embeddings.extend(resp.json()["embeddings"])
+            try:
+                resp = requests.post(
+                    f"{base_url}/api/embed",
+                    json={"model": embed_model, "input": batch},
+                    timeout=120,
+                )
+                resp.raise_for_status()
+                embeddings.extend(resp.json()["embeddings"])
+            except requests.exceptions.ConnectionError:
+                raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?")
 
         ids = [
             chunk_id(c["source_file"], c["page_num"], i)

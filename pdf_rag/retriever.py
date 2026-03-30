@@ -1,22 +1,26 @@
 import requests
+from chromadb import Collection
 
 from .config import EMBED_MODEL, OLLAMA_BASE_URL, TOP_K
 
 
 def query(
     question: str,
-    collection,
+    collection: Collection,
     embed_model: str = EMBED_MODEL,
     base_url: str = OLLAMA_BASE_URL,
     top_k: int = TOP_K,
 ) -> list[dict]:
-    resp = requests.post(
-        f"{base_url}/api/embed",
-        json={"model": embed_model, "input": [question]},
-        timeout=60,
-    )
-    resp.raise_for_status()
-    query_embedding = resp.json()["embeddings"][0]
+    try:
+        resp = requests.post(
+            f"{base_url}/api/embed",
+            json={"model": embed_model, "input": [question]},
+            timeout=60,
+        )
+        resp.raise_for_status()
+        query_embedding = resp.json()["embeddings"][0]
+    except requests.exceptions.ConnectionError:
+        raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?")
 
     results = collection.query(
         query_embeddings=[query_embedding],
