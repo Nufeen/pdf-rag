@@ -1,6 +1,7 @@
 # pdf-rag
 
-Local RAG (Retrieval-Augmented Generation) CLI for searching a folder of PDF books. Fully local — no cloud services. Uses Ollama for embeddings and LLM inference, ChromaDB for vector storage.
+Local RAG (Retrieval-Augmented Generation) CLI for searching a folder of PDF books.
+Fully local — no cloud services. Uses Ollama for embeddings and LLM inference, ChromaDB for vector storage.
 
 ## Stack
 
@@ -46,13 +47,13 @@ ollama pull mxbai-embed-large
 ollama pull command-r:35b    # or see model recommendations above
 ```
 
-On this machine, point to the remote Ollama host:
+On machine with project running, point to the remote Ollama host:
 
 ```bash
 export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 ```
 
-## Local Model Recommendations (apr 2026)
+## Local Model Recommendations (actual for apr 2026)
 
 ### Embedding model
 
@@ -72,7 +73,8 @@ export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 | `qwen2.5:32b`   | 32B     | 128k    | Strong choice for non-English books                                        |
 | `mistral:7b`    | 7B      | 8k      | Minimum viable, good for low-memory hosts                                  |
 
-`command-r:35b` is the best fit for RAG specifically — it's trained to ground answers in retrieved context and produce accurate citations rather than hallucinate beyond the provided excerpts.
+`command-r:35b` is the best fit for RAG specifically — it's trained to ground answers in retrieved context
+and produce accurate citations rather than hallucinate beyond the provided excerpts.
 
 ## macOS Setup
 
@@ -228,13 +230,6 @@ All variables can also be passed as CLI flags — run `pdf-rag index --help` or 
 
 ## Customizing the System Prompt
 
-The LLM system prompt lives in `prompt.txt` at the project root. Edit it directly to change how the model answers — for example, to adjust tone, citation format, or add domain-specific instructions:
+The LLM system prompt lives in `prompt.txt` at the project root. Edit it directly to change how the model answers.
 
-```
-You are a research assistant. Answer the user's question using ONLY the provided context excerpts from PDF books.
-For each statement you make, cite the source as [Book: <filename>, Page: <page_num>].
-If the context does not contain enough information to answer the question, say so explicitly.
-Do not use any knowledge outside the provided excerpts.
-```
-
-Changes take effect immediately on the next `pdf-rag ask` — no reinstall needed. If `prompt.txt` is missing, the tool falls back to the default prompt above.
+Changes take effect immediately on the next `pdf-rag ask` — no reinstall needed.
