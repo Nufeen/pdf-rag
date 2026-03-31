@@ -74,6 +74,23 @@ export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 
 `command-r:35b` is the best fit for RAG specifically — it's trained to ground answers in retrieved context and produce accurate citations rather than hallucinate beyond the provided excerpts.
 
+## macOS Setup
+
+macOS ships with an outdated system Python. Install a current version first:
+
+```bash
+# Install Homebrew (if not installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Python 3.13
+brew install python@3.13
+
+# Verify
+python3.13 --version   # Python 3.13.x
+```
+
+Then proceed with `make setup` — it will pick up `python3.13` automatically.
+
 ## Installation
 
 **With Make (recommended):**
