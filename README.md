@@ -93,6 +93,10 @@ python3.13 --version   # Python 3.13.x
 
 Then proceed with `make setup` — it will pick up `python3.13` automatically.
 
+> [!NOTE]
+> Do not forget to allow local network usage for terminal sessions in mac os!
+> If you get "No route to host" error with local network ollama probably thats it
+
 ## Installation
 
 **With Make (recommended):**
@@ -227,6 +231,12 @@ pdf-rag index ~/Books/ --force
 | `RAG_TOP_K`         | `5`                      | Chunks retrieved per query                             |
 
 All variables can also be passed as CLI flags — run `pdf-rag index --help` or `pdf-rag ask --help` for details.
+
+### Optimal Chunk Size Guidelines (google claim)
+
+Small (128–256 tokens): Ideal for specific, fact-based questions (FAQ, short answer).
+Medium (256–512 tokens): Good balance for semantic search, general documentation, or RAG chatbot use cases.
+Large (512–1024 tokens): Best for summarizing, understanding relationships in content, or long-document analysis.
 
 ## Customizing the System Prompt
 

@@ -19,8 +19,8 @@ def query(
         )
         resp.raise_for_status()
         query_embedding = resp.json()["embeddings"][0]
-    except requests.exceptions.ConnectionError:
-        raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?")
+    except requests.exceptions.ConnectionError as e:
+        raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?\nError: {e}")
 
     results = collection.query(
         query_embeddings=[query_embedding],

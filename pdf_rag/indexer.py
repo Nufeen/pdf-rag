@@ -17,7 +17,6 @@ from .config import (
     OLLAMA_BASE_URL,
 )
 
-
 def compute_file_hash(path: str) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -119,12 +118,12 @@ def index_folder(
                 resp = requests.post(
                     f"{base_url}/api/embed",
                     json={"model": embed_model, "input": batch},
-                    timeout=120,
+                    timeout=120,    
                 )
                 resp.raise_for_status()
                 embeddings.extend(resp.json()["embeddings"])
-            except requests.exceptions.ConnectionError:
-                raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?")
+            except requests.exceptions.ConnectionError as e:
+                raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?\nError: {e}")
 
         ids = [
             chunk_id(c["source_file"], c["page_num"], i)

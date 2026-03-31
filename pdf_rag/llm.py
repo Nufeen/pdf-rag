@@ -4,6 +4,7 @@ from ollama import Client
 
 from .config import LLM_MODEL, OLLAMA_BASE_URL
 
+
 _PROMPT_FILE = Path(__file__).parent.parent / "prompt.txt"
 
 
