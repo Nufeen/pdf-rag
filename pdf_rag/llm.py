@@ -64,7 +64,7 @@ def generate_answer(
                 token = part["message"]["content"]
                 print(token, end="", flush=True)
                 full += token
-            print()
+            print("\n🌵")
             return full
         else:
             return response["message"]["content"]
