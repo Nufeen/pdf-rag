@@ -7,6 +7,47 @@ Key ideas:
 - Base scenario is fully local usage — no cloud services. Ollama for embeddings and LLM inference, ChromaDB for vector storage.
 - Keeping things as simple as it can be
 
+## Getting Started
+
+**How it works:**
+
+```
+your PDFs → pedro index → vector DB → pedro ask → answer
+```
+
+1. You have a folder of PDF books
+2. `pedro index` reads them, splits into chunks, embeds each chunk, stores in a local vector DB
+3. `pedro ask` embeds your question, finds the most relevant chunks, sends them to a local LLM, streams the answer back
+
+Nothing leaves your machine.
+
+After playing with parameters and models, when you get `pedro ask` to work quickly
+you can start using `pedro research` for multi-step reasoning.
+
+**Quickstart (in ideal world with python 3.13 and Ollama running on local network):**
+
+```bash
+# 1. Clone and install
+git clone https://github.com/Nufeen/pdf-rag.git && cd pdf-rag
+make setup
+source .venv/bin/activate
+
+# 2. Point to your Ollama host and configure
+cp .env.example .env
+# edit .env — set OLLAMA_BASE_URL=http://<your-ollama-host>:11434
+
+# 3. Index your books
+pedro index ~/Books/
+
+# 4. Ask a question
+pedro ask "What is backpropagation?"
+
+# 5. Deep research (multi-step reasoning)
+pedro research "Compare symbolic and connectionist approaches to AI"
+```
+
+That's it. Re-run `pedro index ~/Books/` whenever you add new PDFs — only new files are processed.
+
 ## Stack
 
 | Component      | Choice                                   | Reason                                                   |
@@ -303,3 +344,20 @@ All prompts live in the `prompts/` folder. Edit any file directly — changes ta
 | `prompts/synthesize.txt`        | `pedro research` | Instructs the model to combine all research findings into a final answer              |
 
 Prompt files support `{placeholders}` that are filled at runtime (e.g. `{question}`, `{n}`, `{answer}`, `{context}`). Do not remove placeholders — the tool will fail if they are missing.
+
+## Notes
+
+Tools and projects to look at in the context of the problem:
+
+- https://github.com/zylon-ai/private-gpt
+
+- https://github.com/assafelovic/gpt-researcher
+
+- https://developers.llamaindex.ai/python/examples/
+
+- https://github.com/langchain-ai/langchain
+
+- https://github.com/Mintplex-Labs/anything-llm
+
+I tried some but surprisingly ended with generating own code since in all cases
+it turned out to be not that easy to get fully local stack working out of the box
