@@ -1,9 +1,13 @@
-# pdf-rag
+# pdf-rag (🌵 a.k.a `pedro`)
 
-Local RAG (Retrieval-Augmented Generation) CLI for searching a folder of PDF books.
-Fully local — no cloud services. Uses Ollama for embeddings and LLM inference, ChromaDB for vector storage.
+Local RAG (Retrieval-Augmented Generation) CLI for searching a folder of PDF books or papers.
 
-## Stack
+Key ideas:
+
+- Base scenario is fully local usage — no cloud services. Ollama for embeddings and LLM inference, ChromaDB for vector storage.
+- Keeping things as simple as it can be
+
+## 🪅 Stack
 
 | Component      | Choice                                   | Reason                                                   |
 | -------------- | ---------------------------------------- | -------------------------------------------------------- |
@@ -16,7 +20,7 @@ Fully local — no cloud services. Uses Ollama for embeddings and LLM inference,
 | CLI            | Click (command group)                    | Cleaner subcommands than argparse                        |
 | Framework      | None (raw components)                    | RAG pipeline is simple; no LlamaIndex/LangChain overhead |
 
-## Project Structure
+## 🌮 Project Structure
 
 ```
 pdf-rag/
@@ -35,7 +39,7 @@ pdf-rag/
 
 ChromaDB is stored at `~/.pdf-rag/chroma_db` by default (overridable via `--db-path` or `RAG_DB_PATH` env var).
 
-## Prerequisites
+## 🌶️ Prerequisites
 
 On the machine running Ollama:
 
@@ -53,7 +57,7 @@ On machine with project running, point to the remote Ollama host:
 export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 ```
 
-## Local Model Recommendations (actual for apr 2026)
+## 🎺 Local Model Recommendations (actual for apr 2026)
 
 ### Embedding model
 
@@ -76,7 +80,7 @@ export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 `command-r:35b` is the best fit for RAG specifically — it's trained to ground answers in retrieved context
 and produce accurate citations rather than hallucinate beyond the provided excerpts.
 
-## macOS Setup
+## 🦅 macOS Setup
 
 macOS ships with an outdated system Python. Install a current version first:
 
@@ -97,7 +101,7 @@ Then proceed with `make setup` — it will pick up `python3.13` automatically.
 > Do not forget to allow local network usage for terminal sessions in mac os!
 > If you get "No route to host" error with local network ollama probably thats it
 
-## Installation
+## 🪇 Installation
 
 **With Make (recommended):**
 
@@ -138,7 +142,7 @@ export $(grep -v '^#' .env | xargs)
 | `make install` | Install into existing venv           |
 | `make clean`   | Remove venv and build artifacts      |
 
-## Indexing
+## 🌵 Indexing
 
 Scan a folder and index all PDFs:
 
@@ -163,7 +167,7 @@ pedro index ~/Books/
 # Skipping (already indexed): pattern_recognition.pdf
 ```
 
-## Adding New Books
+## 📚 Adding New Books
 
 Drop the new PDF into the folder and re-run the index command:
 
@@ -178,7 +182,7 @@ pedro index ~/Books/
 
 Only the new file is processed. Existing books are skipped instantly.
 
-## Querying
+## 🔍 Querying
 
 ```bash
 pedro ask "What is the vanishing gradient problem?"
@@ -210,7 +214,7 @@ Retrieve more context chunks:
 pedro ask "Compare LSTM and GRU" --top-k 8
 ```
 
-## Re-indexing Everything
+## 🌯 Re-indexing Everything
 
 Use `--force` to re-index all files, for example after changing chunk size:
 
@@ -218,7 +222,7 @@ Use `--force` to re-index all files, for example after changing chunk size:
 pedro index ~/Books/ --force
 ```
 
-## Environment Variables
+## 🎸 Environment Variables
 
 | Variable            | Default                  | Description                                            |
 | ------------------- | ------------------------ | ------------------------------------------------------ |
@@ -238,7 +242,7 @@ Small (128–256 tokens): Ideal for specific, fact-based questions (FAQ, short a
 Medium (256–512 tokens): Good balance for semantic search, general documentation, or RAG chatbot use cases.
 Large (512–1024 tokens): Best for summarizing, understanding relationships in content, or long-document analysis.
 
-## Customizing the System Prompt
+## 🪄 Customizing the System Prompt
 
 The LLM system prompt lives in `prompt.txt` at the project root. Edit it directly to change how the model answers.
 
