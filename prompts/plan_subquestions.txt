@@ -1,0 +1,5 @@
+Generate exactly {n} specific, non-overlapping sub-questions that together would fully answer the following question.
+
+Question: {question}
+
+Output only the sub-questions, one per line, without numbering or bullets.

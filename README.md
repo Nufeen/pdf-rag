@@ -7,7 +7,7 @@ Key ideas:
 - Base scenario is fully local usage — no cloud services. Ollama for embeddings and LLM inference, ChromaDB for vector storage.
 - Keeping things as simple as it can be
 
-## 🪅 Stack
+## Stack
 
 | Component      | Choice                                   | Reason                                                   |
 | -------------- | ---------------------------------------- | -------------------------------------------------------- |
@@ -20,7 +20,7 @@ Key ideas:
 | CLI            | Click (command group)                    | Cleaner subcommands than argparse                        |
 | Framework      | None (raw components)                    | RAG pipeline is simple; no LlamaIndex/LangChain overhead |
 
-## 🌮 Project Structure
+## Project Structure
 
 ```
 pdf-rag/
@@ -39,7 +39,7 @@ pdf-rag/
 
 ChromaDB is stored at `~/.pdf-rag/chroma_db` by default (overridable via `--db-path` or `RAG_DB_PATH` env var).
 
-## 🌶️ Prerequisites
+## Prerequisites
 
 On the machine running Ollama:
 
@@ -57,7 +57,7 @@ On machine with project running, point to the remote Ollama host:
 export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 ```
 
-## 🎺 Local Model Recommendations (actual for apr 2026)
+## Local Model Recommendations (actual for apr 2026)
 
 ### Embedding model
 
@@ -80,7 +80,7 @@ export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 `command-r:35b` is the best fit for RAG specifically — it's trained to ground answers in retrieved context
 and produce accurate citations rather than hallucinate beyond the provided excerpts.
 
-## 🦅 macOS Setup
+## macOS Setup
 
 macOS ships with an outdated system Python. Install a current version first:
 
@@ -101,7 +101,7 @@ Then proceed with `make setup` — it will pick up `python3.13` automatically.
 > Do not forget to allow local network usage for terminal sessions in mac os!
 > If you get "No route to host" error with local network ollama probably thats it
 
-## 🪇 Installation
+## Installation
 
 **With Make (recommended):**
 
@@ -142,7 +142,7 @@ export $(grep -v '^#' .env | xargs)
 | `make install` | Install into existing venv           |
 | `make clean`   | Remove venv and build artifacts      |
 
-## 🌵 Indexing
+## Indexing
 
 Scan a folder and index all PDFs:
 
@@ -167,7 +167,7 @@ pedro index ~/Books/
 # Skipping (already indexed): pattern_recognition.pdf
 ```
 
-## 📚 Adding New Books
+## Adding New Books
 
 Drop the new PDF into the folder and re-run the index command:
 
@@ -182,7 +182,7 @@ pedro index ~/Books/
 
 Only the new file is processed. Existing books are skipped instantly.
 
-## 🔍 Querying
+## Querying
 
 ```bash
 pedro ask "What is the vanishing gradient problem?"
@@ -214,7 +214,52 @@ Retrieve more context chunks:
 pedro ask "Compare LSTM and GRU" --top-k 8
 ```
 
-## 🌯 Re-indexing Everything
+## 🧠 Deep Research
+
+For complex questions that need multi-angle reasoning, use `pedro research`. It decomposes the question into sub-questions, answers each via RAG, then synthesizes and iteratively refines the result.
+
+```bash
+pedro research "What are the fundamental differences between symbolic and connectionist AI?"
+```
+
+Output:
+
+```
+🪅 Planning 3 sub-questions...
+  1. What is symbolic AI and what are its core assumptions?
+  2. What is connectionist AI and how do neural networks differ from symbolic systems?
+  3. What are the practical tradeoffs between the two approaches?
+
+🪅 Executing 3 sub-question(s)...
+  [1/3] What is symbolic AI...
+  [2/3] What is connectionist AI...
+  [3/3] What are the practical tradeoffs...
+
+🪅 Reflecting (pass 1/1)...
+  → 1 follow-up sub-question(s) identified
+
+🪅 Synthesizing final answer...
+
+The fundamental differences between symbolic and connectionist AI...
+```
+
+Control depth and breadth:
+
+```bash
+pedro research "Explain attention mechanisms" --depth 1   # single pass, no reflection
+pedro research "Compare LSTM, GRU and Transformer" --depth 3 --sub-questions 5
+```
+
+Configure via `.env`:
+
+```
+RESEARCH_DEPTH=2
+RESEARCH_N_SUBQUESTIONS=3
+```
+
+[How it works](adr/0000-deep-research-mode.md)
+
+## Re-indexing Everything
 
 Use `--force` to re-index all files, for example after changing chunk size:
 
@@ -222,30 +267,39 @@ Use `--force` to re-index all files, for example after changing chunk size:
 pedro index ~/Books/ --force
 ```
 
-## 🎸 Environment Variables
+## Environment Variables
 
-| Variable            | Default                  | Description                                            |
-| ------------------- | ------------------------ | ------------------------------------------------------ |
-| `OLLAMA_BASE_URL`   | `http://localhost:11434` | Ollama host URL                                        |
-| `RAG_DB_PATH`       | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                  |
-| `RAG_EMBED_MODEL`   | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`) |
-| `RAG_LLM_MODEL`     | `mistral:7b`             | Ollama LLM model (recommend `command-r:35b`)           |
-| `RAG_CHUNK_SIZE`    | `800`                    | Characters per chunk                                   |
-| `RAG_CHUNK_OVERLAP` | `150`                    | Overlap between chunks                                 |
-| `RAG_TOP_K`         | `5`                      | Chunks retrieved per query                             |
+| Variable                  | Default                  | Description                                            |
+| ------------------------- | ------------------------ | ------------------------------------------------------ |
+| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                        |
+| `RAG_DB_PATH`             | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                  |
+| `RAG_EMBED_MODEL`         | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`) |
+| `RAG_LLM_MODEL`           | `mistral:7b`             | Ollama LLM model (recommend `command-r:35b`)           |
+| `RAG_CHUNK_SIZE`          | `800`                    | Characters per chunk                                   |
+| `RAG_CHUNK_OVERLAP`       | `150`                    | Overlap between chunks                                 |
+| `RAG_TOP_K`               | `5`                      | Chunks retrieved per query                             |
+| `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`         |
+| `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`       |
 
-All variables can also be passed as CLI flags — run `pedro index --help` or `pedro ask --help` for details.
+All variables can also be passed as CLI flags — run `pedro index --help`, `pedro ask --help`, or `pedro research --help` for details.
 
 ### Optimal Chunk Size Guidelines (google claim)
 
-| Size | Tokens | Best for |
-|---|---|---|
-| Small | 128–256 | Specific, fact-based questions (FAQ, short answer) |
-| Medium | 256–512 | Semantic search, general documentation, RAG chatbot |
-| Large | 512–1024 | Summarizing, relationships in content, long-document analysis |
+| Size   | Tokens   | Best for                                                      |
+| ------ | -------- | ------------------------------------------------------------- |
+| Small  | 128–256  | Specific, fact-based questions (FAQ, short answer)            |
+| Medium | 256–512  | Semantic search, general documentation, RAG chatbot           |
+| Large  | 512–1024 | Summarizing, relationships in content, long-document analysis |
 
-## 🪄 Customizing the System Prompt
+## Customizing Prompts
 
-The LLM system prompt lives in `prompt.txt` at the project root. Edit it directly to change how the model answers.
+All prompts live in the `prompts/` folder. Edit any file directly — changes take effect on the next command, no reinstall needed.
 
-Changes take effect immediately on the next `pedro ask` — no reinstall needed.
+| File                            | Used by          | Purpose                                                                               |
+| ------------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
+| `prompts/answer.txt`            | `pedro ask`      | System prompt for answer generation — controls tone, citation format, grounding rules |
+| `prompts/plan_subquestions.txt` | `pedro research` | Instructs the model to decompose the question into N sub-questions                    |
+| `prompts/reflect.txt`           | `pedro research` | Asks the model to evaluate completeness and identify gaps in the current answer       |
+| `prompts/synthesize.txt`        | `pedro research` | Instructs the model to combine all research findings into a final answer              |
+
+Prompt files support `{placeholders}` that are filled at runtime (e.g. `{question}`, `{n}`, `{answer}`, `{context}`). Do not remove placeholders — the tool will fail if they are missing.

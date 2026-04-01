@@ -7,10 +7,13 @@ from .config import (
     EMBED_MODEL,
     LLM_MODEL,
     OLLAMA_BASE_URL,
+    RESEARCH_DEPTH,
+    RESEARCH_N_SUBQUESTIONS,
     TOP_K,
 )
 from .indexer import index_folder
 from .llm import generate_answer
+from .researcher import research
 from .retriever import query
 
 
@@ -76,4 +79,32 @@ def ask(question, db_path, model, embed_model, ollama_url, top_k, no_sources):
         chunks=chunks,
         base_url=ollama_url,
         llm_model=model,
+    )
+
+
+@cli.command("research")
+@click.argument("question")
+@click.option("--db-path", default=CHROMA_DB_PATH, show_default=True, help="ChromaDB storage path")
+@click.option("--model", default=LLM_MODEL, show_default=True, help="Ollama LLM model")
+@click.option("--embed-model", default=EMBED_MODEL, show_default=True, help="Ollama embedding model")
+@click.option("--ollama-url", envvar="OLLAMA_BASE_URL", default=OLLAMA_BASE_URL, show_default=True, help="Ollama base URL")
+@click.option("--depth", default=RESEARCH_DEPTH, show_default=True, type=int, help="Max reflection iterations")
+@click.option("--sub-questions", default=RESEARCH_N_SUBQUESTIONS, show_default=True, type=int, help="Sub-questions per iteration")
+@click.option("--top-k", default=TOP_K, show_default=True, type=int, help="Chunks retrieved per sub-question")
+def research_cmd(question, db_path, model, embed_model, ollama_url, depth, sub_questions, top_k):
+    """Deep multi-step research over the indexed PDF library."""
+    client = chromadb.PersistentClient(path=db_path)
+    collection = client.get_or_create_collection(
+        COLLECTION_NAME,
+        metadata={"hnsw:space": "cosine"},
+    )
+    research(
+        question=question,
+        collection=collection,
+        base_url=ollama_url,
+        llm_model=model,
+        embed_model=embed_model,
+        depth=depth,
+        n_subquestions=sub_questions,
+        top_k=top_k,
     )
