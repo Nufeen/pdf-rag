@@ -143,7 +143,7 @@ export $(grep -v '^#' .env | xargs)
 Scan a folder and index all PDFs:
 
 ```bash
-pdf-rag index ~/Books/
+pedro index ~/Books/
 ```
 
 Output:
@@ -158,7 +158,7 @@ Indexed: pattern_recognition.pdf (2103 chunks)
 Indexing is incremental — each file's SHA-256 hash is stored. Re-running the command only processes new or changed files:
 
 ```bash
-pdf-rag index ~/Books/
+pedro index ~/Books/
 # Skipping (already indexed): deep_learning.pdf
 # Skipping (already indexed): pattern_recognition.pdf
 ```
@@ -169,7 +169,7 @@ Drop the new PDF into the folder and re-run the index command:
 
 ```bash
 cp new_book.pdf ~/Books/
-pdf-rag index ~/Books/
+pedro index ~/Books/
 # Skipping (already indexed): deep_learning.pdf
 # Skipping (already indexed): pattern_recognition.pdf
 # Embedding: new_book.pdf (1523 chunks)...
@@ -181,7 +181,7 @@ Only the new file is processed. Existing books are skipped instantly.
 ## Querying
 
 ```bash
-pdf-rag ask "What is the vanishing gradient problem?"
+pedro ask "What is the vanishing gradient problem?"
 ```
 
 Output:
@@ -201,13 +201,13 @@ Residual connections solve this by... [Book: deep_learning.pdf, Page: 291]
 Hide the source list:
 
 ```bash
-pdf-rag ask "Explain attention mechanisms" --no-sources
+pedro ask "Explain attention mechanisms" --no-sources
 ```
 
 Retrieve more context chunks:
 
 ```bash
-pdf-rag ask "Compare LSTM and GRU" --top-k 8
+pedro ask "Compare LSTM and GRU" --top-k 8
 ```
 
 ## Re-indexing Everything
@@ -215,7 +215,7 @@ pdf-rag ask "Compare LSTM and GRU" --top-k 8
 Use `--force` to re-index all files, for example after changing chunk size:
 
 ```bash
-pdf-rag index ~/Books/ --force
+pedro index ~/Books/ --force
 ```
 
 ## Environment Variables
@@ -230,7 +230,7 @@ pdf-rag index ~/Books/ --force
 | `RAG_CHUNK_OVERLAP` | `150`                    | Overlap between chunks                                 |
 | `RAG_TOP_K`         | `5`                      | Chunks retrieved per query                             |
 
-All variables can also be passed as CLI flags — run `pdf-rag index --help` or `pdf-rag ask --help` for details.
+All variables can also be passed as CLI flags — run `pedro index --help` or `pedro ask --help` for details.
 
 ### Optimal Chunk Size Guidelines (google claim)
 
@@ -242,4 +242,4 @@ Large (512–1024 tokens): Best for summarizing, understanding relationships in 
 
 The LLM system prompt lives in `prompt.txt` at the project root. Edit it directly to change how the model answers.
 
-Changes take effect immediately on the next `pdf-rag ask` — no reinstall needed.
+Changes take effect immediately on the next `pedro ask` — no reinstall needed.

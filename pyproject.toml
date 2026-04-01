@@ -1,5 +1,5 @@
 [project]
-name = "pdf-rag"
+name = "pedro"
 version = "0.1.0"
 requires-python = ">=3.11"
 license = {text = "WTFPL"}
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pdf-rag = "pdf_rag.cli:cli"
+pedro = "pdf_rag.cli:cli"
 
 [build-system]
 requires = ["setuptools>=68"]

@@ -24,7 +24,7 @@ setup: install
 	@echo "Setup complete. To get started:"
 	@echo "  source $(VENV)/bin/activate"
 	@echo "  cp .env.example .env   # then edit .env with your Ollama host IP"
-	@echo "  pdf-rag index ~/Books/"
+	@echo "  pedro index ~/Books/"
 
 clean:
 	rm -rf $(VENV) *.egg-info dist build __pycache__ pdf_rag/__pycache__
