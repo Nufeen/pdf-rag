@@ -238,9 +238,11 @@ All variables can also be passed as CLI flags — run `pedro index --help` or `p
 
 ### Optimal Chunk Size Guidelines (google claim)
 
-Small (128–256 tokens): Ideal for specific, fact-based questions (FAQ, short answer).
-Medium (256–512 tokens): Good balance for semantic search, general documentation, or RAG chatbot use cases.
-Large (512–1024 tokens): Best for summarizing, understanding relationships in content, or long-document analysis.
+| Size | Tokens | Best for |
+|---|---|---|
+| Small | 128–256 | Specific, fact-based questions (FAQ, short answer) |
+| Medium | 256–512 | Semantic search, general documentation, RAG chatbot |
+| Large | 512–1024 | Summarizing, relationships in content, long-document analysis |
 
 ## 🪄 Customizing the System Prompt
 
