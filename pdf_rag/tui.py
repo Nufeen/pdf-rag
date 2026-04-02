@@ -54,8 +54,7 @@ Input {
 class PedroApp(App):
     CSS = CSS
     BINDINGS = [
-        Binding("tab", "toggle_mode", "Toggle mode", show=True),
-        Binding("ctrl+t", "toggle_mode", "Toggle mode", show=True),
+        Binding("tab", "toggle_mode", "Toggle mode", show=True, priority=True),
         Binding("ctrl+c", "quit", "Quit", show=True),
     ]
 
@@ -65,7 +64,7 @@ class PedroApp(App):
         yield RichLog(id="output", wrap=True, markup=True, highlight=False)
         yield Static("", id="stream")
         yield Static("", id="status")
-        yield Input(placeholder="Ask a question… (Ctrl-t to switch mode)", id="input")
+        yield Input(placeholder="Ask a question… (Tab to switch mode)", id="input")
         yield Footer()
 
     def on_mount(self) -> None:
