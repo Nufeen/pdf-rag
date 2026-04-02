@@ -14,12 +14,14 @@ from .config import (
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
+    SESSIONS_PATH,
     TINY_MODEL,
     TOP_K,
 )
 from .llm import generate_answer
 from .researcher import research
 from .retriever import query
+from .session_log import SessionLog
 
 _MODES = ("ask", "research")
 
@@ -57,14 +59,19 @@ class PedroApp(App):
     CSS = CSS
     BINDINGS = [
         Binding("tab", "toggle_mode", "Toggle mode", show=True, priority=True),
+        Binding("up", "history_prev", "Prev question", show=False, priority=True),
+        Binding("down", "history_next", "Next question", show=False, priority=True),
         Binding("escape", "cancel", "Cancel", show=True),
         Binding("ctrl+c", "copy_answer", "Copy answer", show=True),
+        Binding("ctrl+a", "copy_session", "Copy session", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
     ]
 
     mode: reactive[str] = reactive("ask")
     _current_worker: Worker | None = None
     _last_answer: str = ""
+    _history: list[dict] = []
+    _history_idx: int = -1
 
     def compose(self) -> ComposeResult:
         yield RichLog(id="output", wrap=True, markup=True, highlight=False)
@@ -74,6 +81,9 @@ class PedroApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
+        self._session_log = SessionLog(SESSIONS_PATH)
+        self._history = []
+        self._history_idx = -1
         self._update_status()
         self.query_one(Input).focus()
 
@@ -96,10 +106,38 @@ class PedroApp(App):
         self.mode = _MODES[(idx + 1) % len(_MODES)]
         log.write(f"\n[bold cyan]>[/bold cyan] Mode changed to [bold cyan]{self.mode}[/bold cyan]\n")
 
+    def action_history_prev(self) -> None:
+        if not self._history:
+            return
+        self._history_idx = max(
+            0,
+            len(self._history) - 1 if self._history_idx == -1 else self._history_idx - 1,
+        )
+        self.query_one(Input).value = self._history[self._history_idx]["question"]
+
+    def action_history_next(self) -> None:
+        if self._history_idx == -1:
+            return
+        self._history_idx += 1
+        inp = self.query_one(Input)
+        if self._history_idx >= len(self._history):
+            self._history_idx = -1
+            inp.value = ""
+        else:
+            inp.value = self._history[self._history_idx]["question"]
+
     def action_copy_answer(self) -> None:
         if self._last_answer:
             self.copy_to_clipboard(self._last_answer)
             self.notify("Answer copied to clipboard")
+
+    def action_copy_session(self) -> None:
+        if not self._history:
+            self.notify("No history yet", severity="warning")
+            return
+        parts = [f"[{e['mode']}] {e['question']}\n{e['answer']}" for e in self._history]
+        self.copy_to_clipboard("\n\n".join(parts))
+        self.notify(f"Session copied ({len(self._history)} answer(s))")
 
     def action_cancel(self) -> None:
         if self._current_worker and self._current_worker.is_running:
@@ -162,6 +200,9 @@ class PedroApp(App):
             )
             answer = "".join(buf)
             self._last_answer = answer
+            self._history.append({"mode": self.mode, "question": question, "answer": answer})
+            self._history_idx = -1
+            self._session_log.append(self.mode, question, answer)
             self.call_from_thread(log.write, answer)
             self.call_from_thread(log.write, f"[dim]model: {LLM_MODEL}[/dim]")
         except InterruptedError:
@@ -201,6 +242,9 @@ class PedroApp(App):
             )
             answer = "".join(buf)
             self._last_answer = answer
+            self._history.append({"mode": self.mode, "question": question, "answer": answer})
+            self._history_idx = -1
+            self._session_log.append(self.mode, question, answer)
             self.call_from_thread(log.write, answer)
             self.call_from_thread(log.write, f"[dim]model: {LLM_MODEL}[/dim]")
         except InterruptedError:
