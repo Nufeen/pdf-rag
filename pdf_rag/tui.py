@@ -62,9 +62,9 @@ class PedroApp(App):
         Binding("up", "history_prev", "Prev question", show=False, priority=True),
         Binding("down", "history_next", "Next question", show=False, priority=True),
         Binding("escape", "cancel", "Cancel", show=True),
-        Binding("ctrl+c", "copy_answer", "Copy answer", show=True),
+        Binding("ctrl+y", "copy_answer", "Copy answer", show=True),
         Binding("ctrl+a", "copy_session", "Copy session", show=True),
-        Binding("ctrl+q", "quit", "Quit", show=True),
+        Binding("ctrl+c", "quit", "Quit", show=True),
     ]
 
     mode: reactive[str] = reactive("ask")
