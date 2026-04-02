@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import click
 from ollama import Client
 from chromadb import Collection
@@ -46,6 +48,7 @@ def synthesize(
     model: str,
     base_url: str,
     stream: bool = True,
+    on_token: Callable[[str], None] | None = None,
 ) -> str:
     parts = []
     for i, f in enumerate(findings, 1):
@@ -60,12 +63,14 @@ def synthesize(
             stream=stream,
         )
         if stream:
+            _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
             full = ""
             for part in response:
                 token = part["message"]["content"]
-                print(token, end="", flush=True)
+                _emit(token)
                 full += token
-            print()
+            if on_token is None:
+                print()
             return full
         else:
             return response["message"]["content"]
@@ -101,35 +106,42 @@ def research(
     depth: int = RESEARCH_DEPTH,
     n_subquestions: int = RESEARCH_N_SUBQUESTIONS,
     top_k: int = TOP_K,
+    log_fn: Callable[[str], None] | None = None,
+    on_token: Callable[[str], None] | None = None,
 ) -> None:
+    step = (lambda msg: log_fn(f"\n🪅 {msg}")) if log_fn else _step
+    info = (lambda msg: log_fn(f"  {msg}")) if log_fn else _info
+    ok = (lambda msg: log_fn(f"  ✓ {msg}")) if log_fn else _ok
+    subq = (lambda i, total, text: log_fn(f"  [{i}/{total}] {text}")) if log_fn else _subq
+
     client = Client(host=base_url)
     all_findings: list[dict] = []
 
     for iteration in range(depth):
         if iteration == 0:
-            _step(f"Planning {n_subquestions} sub-questions...")
+            step(f"Planning {n_subquestions} sub-questions...")
             subquestions = plan_subquestions(question, n_subquestions, client, llm_model)
             for i, sq in enumerate(subquestions, 1):
-                _info(f"{i}. {sq}")
+                info(f"{i}. {sq}")
         else:
-            _step(f"Reflecting (pass {iteration}/{depth - 1})...")
+            step(f"Reflecting (pass {iteration}/{depth - 1})...")
             current_answer = synthesize(
                 question, all_findings, client, llm_model, base_url, stream=False
             )
             followups = reflect(question, current_answer, client, llm_model)
             if followups is None:
-                _ok("Answer is sufficient.")
-                _step("Final answer:\n")
-                synthesize(question, all_findings, client, llm_model, base_url, stream=True)
+                ok("Answer is sufficient.")
+                step("Final answer:\n")
+                synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
                 return
-            _info(f"→ {len(followups)} follow-up sub-question(s) identified:")
+            info(f"→ {len(followups)} follow-up sub-question(s) identified:")
             for i, sq in enumerate(followups, 1):
-                _info(f"  {i}. {sq}")
+                info(f"  {i}. {sq}")
             subquestions = followups
 
-        _step(f"Executing {len(subquestions)} sub-question(s)...")
+        step(f"Executing {len(subquestions)} sub-question(s)...")
         for i, sq in enumerate(subquestions, 1):
-            _subq(i, len(subquestions), sq)
+            subq(i, len(subquestions), sq)
             chunks = query(
                 question=sq,
                 collection=collection,
@@ -138,9 +150,9 @@ def research(
                 top_k=top_k,
             )
             if not chunks:
-                _info("(no relevant content found)")
+                info("(no relevant content found)")
                 continue
-            _info(f"retrieved {len(chunks)} chunks — generating partial answer...")
+            info(f"retrieved {len(chunks)} chunks — generating partial answer...")
             answer = generate_answer(
                 question=sq,
                 chunks=chunks,
@@ -150,5 +162,5 @@ def research(
             )
             all_findings.append({"subquestion": sq, "answer": answer, "chunks": chunks})
 
-    _step("Synthesizing final answer...\n")
-    synthesize(question, all_findings, client, llm_model, base_url, stream=True)
+    step("Synthesizing final answer...\n")
+    synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)

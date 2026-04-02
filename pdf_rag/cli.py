@@ -17,9 +17,13 @@ from .researcher import research
 from .retriever import query
 
 
-@click.group()
-def cli():
+@click.group(invoke_without_command=True)
+@click.pass_context
+def cli(ctx):
     """Local RAG search tool for PDF books."""
+    if ctx.invoked_subcommand is None:
+        from .tui import PedroApp
+        PedroApp().run()
 
 
 @cli.command()

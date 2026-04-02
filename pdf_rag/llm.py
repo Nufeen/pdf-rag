@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from pathlib import Path
 
 from ollama import Client
@@ -40,6 +41,7 @@ def generate_answer(
     base_url: str = OLLAMA_BASE_URL,
     llm_model: str = LLM_MODEL,
     stream: bool = True,
+    on_token: Callable[[str], None] | None = None,
 ) -> str:
     context = build_context(chunks)
     user_message = (
@@ -59,12 +61,14 @@ def generate_answer(
             stream=stream,
         )
         if stream:
+            _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
             full = ""
             for part in response:
                 token = part["message"]["content"]
-                print(token, end="", flush=True)
+                _emit(token)
                 full += token
-            print("\n🌵")
+            if on_token is None:
+                print("\n🌵")
             return full
         else:
             return response["message"]["content"]
