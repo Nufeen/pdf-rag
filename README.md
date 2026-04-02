@@ -50,16 +50,16 @@ That's it. Re-run `pedro index ~/Books/` whenever you add new PDFs — only new 
 
 ## Stack
 
-| Component      | Choice                                   | Reason                                                   |
-| -------------- | ---------------------------------------- | -------------------------------------------------------- |
-| PDF extraction | PyMuPDF (`fitz`)                         | Fast, page-level metadata, handles most encodings        |
-| Chunking       | Custom recursive splitter                | Split on `\n\n` → `\n` → `.` → ` ` to preserve semantics |
-| Embeddings     | `nomic-embed-text` via Ollama            | No extra deps, runs locally, good retrieval quality      |
-| Vector DB      | ChromaDB (embedded/persistent)           | No server, persists to disk, metadata filtering built-in |
-| LLM            | `mistral:7b` or `llama3.2:3b` via Ollama | Streaming, 8k context, instruction-following             |
-| Ollama host    | Remote (local network)                   | Set via `OLLAMA_BASE_URL=http://<host-ip>:11434`         |
-| CLI            | Click (command group)                    | Cleaner subcommands than argparse                        |
-| Framework      | None (raw components)                    | RAG pipeline is simple; no LlamaIndex/LangChain overhead |
+| Component      | Choice                              | Reason                                                   |
+| -------------- | ----------------------------------- | -------------------------------------------------------- |
+| PDF extraction | PyMuPDF (`fitz`)                    | Fast, page-level metadata, handles most encodings        |
+| Chunking       | Custom recursive splitter           | Split on `\n\n` → `\n` → `.` → ` ` to preserve semantics |
+| Embeddings     | `nomic-embed-text` via Ollama       | See model recomendations below                           |
+| Vector DB      | ChromaDB (embedded/persistent)      | No server, persists to disk, metadata filtering built-in |
+| LLM            | any via Ollama                      | See recomendations below                                 |
+| Ollama host    | Remote (local network)              | Set via `OLLAMA_BASE_URL=http://<host-ip>:11434`         |
+| CLI            | Click + Textual (adr 1 for details) | https://click.palletsprojects.com/en/stable/             |
+| Framework      | None (raw components)               | RAG pipeline is simple; no LlamaIndex/LangChain overhead |
 
 ## Project Structure
 
@@ -310,19 +310,19 @@ pedro index ~/Books/ --force
 
 ## Environment Variables
 
-| Variable                  | Default                  | Description                                            |
-| ------------------------- | ------------------------ | ------------------------------------------------------ |
-| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                        |
-| `RAG_DB_PATH`             | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                  |
-| `RAG_EMBED_MODEL`         | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`) |
-| `RAG_DEEP_MODEL`           | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`) |
-| `RAG_FAST_MODEL`          | `RAG_DEEP_MODEL`          | Medium model — per-sub-question answers and intermediate synthesis |
-| `RAG_TINY_MODEL`          | `RAG_FAST_MODEL`         | Fast model — planning and reflection (3B recommended, e.g. `qwen2.5:3b`) |
-| `RAG_CHUNK_SIZE`          | `800`                    | Characters per chunk                                   |
-| `RAG_CHUNK_OVERLAP`       | `150`                    | Overlap between chunks                                 |
-| `RAG_TOP_K`               | `5`                      | Chunks retrieved per query                             |
-| `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`         |
-| `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`       |
+| Variable                  | Default                  | Description                                                                    |
+| ------------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                                                |
+| `RAG_DB_PATH`             | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                                          |
+| `RAG_EMBED_MODEL`         | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`)                         |
+| `RAG_DEEP_MODEL`          | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`) |
+| `RAG_FAST_MODEL`          | `RAG_DEEP_MODEL`         | Medium model — per-sub-question answers and intermediate synthesis             |
+| `RAG_TINY_MODEL`          | `RAG_FAST_MODEL`         | Fast model — planning and reflection (3B recommended, e.g. `qwen2.5:3b`)       |
+| `RAG_CHUNK_SIZE`          | `800`                    | Characters per chunk                                                           |
+| `RAG_CHUNK_OVERLAP`       | `150`                    | Overlap between chunks                                                         |
+| `RAG_TOP_K`               | `5`                      | Chunks retrieved per query                                                     |
+| `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`                                 |
+| `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`                               |
 
 All variables can also be passed as CLI flags — run `pedro index --help`, `pedro ask --help`, or `pedro research --help` for details.
 

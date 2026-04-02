@@ -16,6 +16,10 @@ Add a `pedro research` command implementing **Query Decomposition + Iterative Re
 
 Iteration is bounded by a `DEPTH` parameter. At `DEPTH=1` there is no reflection — single decompose-execute-synthesize pass.
 
+https://arxiv.org/html/2510.18633v1 on Query Decomposition
+
+https://arxiv.org/pdf/2303.17651 on Self Refine
+
 ## Approach
 
 Maps to three established ideas:
