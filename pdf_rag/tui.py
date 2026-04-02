@@ -86,9 +86,9 @@ class PedroApp(App):
         log = self.query_one("#output", RichLog)
         log.write(f"\n[bold cyan]>[/bold cyan] {question}\n")
         if self.mode == "ask":
-            self.run_worker(self._do_ask(question), thread=True)
+            self.run_worker(lambda: self._do_ask(question), thread=True)
         else:
-            self.run_worker(self._do_research(question), thread=True)
+            self.run_worker(lambda: self._do_research(question), thread=True)
 
     # Workers run in threads (Ollama SDK is synchronous)
 
