@@ -78,8 +78,12 @@ class PedroApp(App):
 
     def _update_status(self) -> None:
         mode = self.mode
+        if mode == "ask":
+            models = f"model: [dim]{LLM_MODEL}[/dim]"
+        else:
+            models = f"deep: [dim]{LLM_MODEL}[/dim]  fast: [dim]{FAST_MODEL}[/dim]  tiny: [dim]{TINY_MODEL}[/dim]"
         self.query_one("#status", Static).update(
-            f" mode: [bold]{mode}[/bold]  │  model: [dim]{LLM_MODEL}[/dim]"
+            f" mode: [bold]{mode}[/bold]  │  {models}"
         )
 
     def action_toggle_mode(self) -> None:
