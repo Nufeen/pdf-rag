@@ -5,10 +5,12 @@ from .config import (
     CHROMA_DB_PATH,
     COLLECTION_NAME,
     EMBED_MODEL,
+    FAST_MODEL,
     LLM_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
+    TINY_MODEL,
     TOP_K,
 )
 from .indexer import index_folder
@@ -90,13 +92,15 @@ def ask(question, db_path, model, embed_model, ollama_url, top_k, no_sources):
 @cli.command("research")
 @click.argument("question")
 @click.option("--db-path", default=CHROMA_DB_PATH, show_default=True, help="ChromaDB storage path")
-@click.option("--model", default=LLM_MODEL, show_default=True, help="Ollama LLM model")
+@click.option("--model", default=LLM_MODEL, show_default=True, help="Quality model for final synthesis")
+@click.option("--fast-model", default=FAST_MODEL, show_default=True, help="Model for sub-question answers and intermediate synthesis")
+@click.option("--tiny-model", default=TINY_MODEL, show_default=True, help="Model for planning and reflection (3B recommended)")
 @click.option("--embed-model", default=EMBED_MODEL, show_default=True, help="Ollama embedding model")
 @click.option("--ollama-url", envvar="OLLAMA_BASE_URL", default=OLLAMA_BASE_URL, show_default=True, help="Ollama base URL")
 @click.option("--depth", default=RESEARCH_DEPTH, show_default=True, type=int, help="Max reflection iterations")
 @click.option("--sub-questions", default=RESEARCH_N_SUBQUESTIONS, show_default=True, type=int, help="Sub-questions per iteration")
 @click.option("--top-k", default=TOP_K, show_default=True, type=int, help="Chunks retrieved per sub-question")
-def research_cmd(question, db_path, model, embed_model, ollama_url, depth, sub_questions, top_k):
+def research_cmd(question, db_path, model, fast_model, tiny_model, embed_model, ollama_url, depth, sub_questions, top_k):
     """Deep multi-step research over the indexed PDF library."""
     client = chromadb.PersistentClient(path=db_path)
     collection = client.get_or_create_collection(
@@ -108,6 +112,8 @@ def research_cmd(question, db_path, model, embed_model, ollama_url, depth, sub_q
         collection=collection,
         base_url=ollama_url,
         llm_model=model,
+        fast_model=fast_model,
+        tiny_model=tiny_model,
         embed_model=embed_model,
         depth=depth,
         n_subquestions=sub_questions,

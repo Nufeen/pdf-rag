@@ -315,7 +315,9 @@ pedro index ~/Books/ --force
 | `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                        |
 | `RAG_DB_PATH`             | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                  |
 | `RAG_EMBED_MODEL`         | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`) |
-| `RAG_LLM_MODEL`           | `mistral:7b`             | Ollama LLM model (recommend `command-r:35b`)           |
+| `RAG_DEEP_MODEL`           | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`) |
+| `RAG_FAST_MODEL`          | `RAG_DEEP_MODEL`          | Medium model — per-sub-question answers and intermediate synthesis |
+| `RAG_TINY_MODEL`          | `RAG_FAST_MODEL`         | Fast model — planning and reflection (3B recommended, e.g. `qwen2.5:3b`) |
 | `RAG_CHUNK_SIZE`          | `800`                    | Characters per chunk                                   |
 | `RAG_CHUNK_OVERLAP`       | `150`                    | Overlap between chunks                                 |
 | `RAG_TOP_K`               | `5`                      | Chunks retrieved per query                             |

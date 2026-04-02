@@ -6,10 +6,12 @@ from chromadb import Collection
 
 from .config import (
     EMBED_MODEL,
+    FAST_MODEL,
     LLM_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
+    TINY_MODEL,
     TOP_K,
 )
 from .llm import generate_answer, load_prompt
@@ -102,6 +104,8 @@ def research(
     collection: Collection,
     base_url: str = OLLAMA_BASE_URL,
     llm_model: str = LLM_MODEL,
+    fast_model: str = FAST_MODEL,
+    tiny_model: str = TINY_MODEL,
     embed_model: str = EMBED_MODEL,
     depth: int = RESEARCH_DEPTH,
     n_subquestions: int = RESEARCH_N_SUBQUESTIONS,
@@ -120,15 +124,15 @@ def research(
     for iteration in range(depth):
         if iteration == 0:
             step(f"Planning {n_subquestions} sub-questions...")
-            subquestions = plan_subquestions(question, n_subquestions, client, llm_model)
+            subquestions = plan_subquestions(question, n_subquestions, client, tiny_model)
             for i, sq in enumerate(subquestions, 1):
                 info(f"{i}. {sq}")
         else:
             step(f"Reflecting (pass {iteration}/{depth - 1})...")
             current_answer = synthesize(
-                question, all_findings, client, llm_model, base_url, stream=False
+                question, all_findings, client, fast_model, base_url, stream=False
             )
-            followups = reflect(question, current_answer, client, llm_model)
+            followups = reflect(question, current_answer, client, tiny_model)
             if followups is None:
                 ok("Answer is sufficient.")
                 step("Final answer:\n")
@@ -157,7 +161,7 @@ def research(
                 question=sq,
                 chunks=chunks,
                 base_url=base_url,
-                llm_model=llm_model,
+                llm_model=fast_model,
                 stream=False,
             )
             all_findings.append({"subquestion": sq, "answer": answer, "chunks": chunks})

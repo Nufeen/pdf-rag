@@ -15,7 +15,9 @@ def _int(name: str, default: int) -> int:
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBED_MODEL = os.getenv("RAG_EMBED_MODEL", "nomic-embed-text")
-LLM_MODEL = os.getenv("RAG_LLM_MODEL", "mistral:7b")
+LLM_MODEL = os.getenv("RAG_DEEP_MODEL", "mistral:7b")
+FAST_MODEL = os.getenv("RAG_FAST_MODEL", LLM_MODEL)
+TINY_MODEL = os.getenv("RAG_TINY_MODEL", FAST_MODEL)
 CHROMA_DB_PATH = os.getenv("RAG_DB_PATH", str(Path.home() / ".pdf-rag" / "chroma_db"))
 CHUNK_SIZE = _int("RAG_CHUNK_SIZE", 800)
 CHUNK_OVERLAP = _int("RAG_CHUNK_OVERLAP", 150)

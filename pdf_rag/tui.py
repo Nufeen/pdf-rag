@@ -9,10 +9,12 @@ from .config import (
     CHROMA_DB_PATH,
     COLLECTION_NAME,
     EMBED_MODEL,
+    FAST_MODEL,
     LLM_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
+    TINY_MODEL,
     TOP_K,
 )
 from .llm import generate_answer
@@ -159,6 +161,8 @@ class PedroApp(App):
             collection=collection,
             base_url=OLLAMA_BASE_URL,
             llm_model=LLM_MODEL,
+            fast_model=FAST_MODEL,
+            tiny_model=TINY_MODEL,
             embed_model=EMBED_MODEL,
             depth=RESEARCH_DEPTH,
             n_subquestions=RESEARCH_N_SUBQUESTIONS,
