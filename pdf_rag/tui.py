@@ -32,6 +32,11 @@ RichLog {
     padding: 0 1;
 }
 
+#stream {
+    height: auto;
+    padding: 0 1;
+}
+
 #status {
     height: 1;
     background: $primary-darken-2;
@@ -49,7 +54,7 @@ Input {
 class PedroApp(App):
     CSS = CSS
     BINDINGS = [
-        Binding("tab", "toggle_mode", "Toggle mode", show=True),
+        Binding("shift+tab", "toggle_mode", "Toggle mode", show=True),
         Binding("ctrl+c", "quit", "Quit", show=True),
     ]
 
@@ -57,6 +62,7 @@ class PedroApp(App):
 
     def compose(self) -> ComposeResult:
         yield RichLog(id="output", wrap=True, markup=True, highlight=False)
+        yield Static("", id="stream")
         yield Static("", id="status")
         yield Input(placeholder="Ask a question… (Tab to switch mode)", id="input")
         yield Footer()
@@ -94,9 +100,12 @@ class PedroApp(App):
 
     def _do_ask(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
+        stream = self.query_one("#stream", Static)
+        buf: list[str] = []
 
         def emit(token: str) -> None:
-            self.call_from_thread(log.write, token)
+            buf.append(token)
+            self.call_from_thread(stream.update, "".join(buf))
 
         def log_line(msg: str) -> None:
             self.call_from_thread(log.write, msg)
@@ -125,13 +134,19 @@ class PedroApp(App):
             llm_model=LLM_MODEL,
             on_token=emit,
         )
-        self.call_from_thread(log.write, f"\n[dim]model: {LLM_MODEL}[/dim]\n")
+        answer = "".join(buf)
+        self.call_from_thread(log.write, answer)
+        self.call_from_thread(log.write, f"[dim]model: {LLM_MODEL}[/dim]")
+        self.call_from_thread(stream.update, "")
 
     def _do_research(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
+        stream = self.query_one("#stream", Static)
+        buf: list[str] = []
 
         def emit(token: str) -> None:
-            self.call_from_thread(log.write, token)
+            buf.append(token)
+            self.call_from_thread(stream.update, "".join(buf))
 
         def log_fn(msg: str) -> None:
             self.call_from_thread(log.write, msg)
@@ -149,7 +164,10 @@ class PedroApp(App):
             log_fn=log_fn,
             on_token=emit,
         )
-        self.call_from_thread(log.write, f"\n[dim]model: {LLM_MODEL}[/dim]\n")
+        answer = "".join(buf)
+        self.call_from_thread(log.write, answer)
+        self.call_from_thread(log.write, f"[dim]model: {LLM_MODEL}[/dim]")
+        self.call_from_thread(stream.update, "")
 
 
 def _open_collection():
