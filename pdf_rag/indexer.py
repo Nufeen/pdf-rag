@@ -2,6 +2,7 @@ import hashlib
 from pathlib import Path
 
 import chromadb
+import click
 import fitz  # PyMuPDF
 import requests
 from tqdm import tqdm
@@ -112,18 +113,26 @@ def index_folder(
 
         print(f"Embedding: {pdf_path.name} ({len(all_chunks)} chunks)...")
         embeddings = []
+        embed_failed = False
         for i in tqdm(range(0, len(texts), EMBED_BATCH_SIZE), unit="batch", leave=False):
             batch = texts[i : i + EMBED_BATCH_SIZE]
             try:
                 resp = requests.post(
                     f"{base_url}/api/embed",
                     json={"model": embed_model, "input": batch},
-                    timeout=120,    
+                    timeout=120,
                 )
                 resp.raise_for_status()
                 embeddings.extend(resp.json()["embeddings"])
             except requests.exceptions.ConnectionError as e:
                 raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?\nError: {e}")
+            except requests.exceptions.HTTPError as e:
+                click.echo(click.style(f"Warning: skipping {pdf_path.name} — embed API error (batch {i // EMBED_BATCH_SIZE + 1}): {e}", fg="yellow"))
+                embed_failed = True
+                break
+
+        if embed_failed:
+            continue
 
         ids = [
             chunk_id(c["source_file"], c["page_num"], i)
