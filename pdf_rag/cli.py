@@ -80,6 +80,7 @@ def ask(question, db_path, model, embed_model, ollama_url, top_k, no_sources):
         base_url=ollama_url,
         llm_model=model,
     )
+    click.echo(click.style(f"model: {model}", fg="bright_black"))
 
 
 @cli.command("research")
@@ -108,3 +109,4 @@ def research_cmd(question, db_path, model, embed_model, ollama_url, depth, sub_q
         n_subquestions=sub_questions,
         top_k=top_k,
     )
+    click.echo(click.style(f"model: {model}", fg="bright_black"))
