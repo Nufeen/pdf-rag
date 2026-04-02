@@ -96,7 +96,7 @@ class PedroApp(App):
         log = self.query_one("#output", RichLog)
 
         def emit(token: str) -> None:
-            self.call_from_thread(log.write, token, end="")
+            self.call_from_thread(log.write, token)
 
         def log_line(msg: str) -> None:
             self.call_from_thread(log.write, msg)
@@ -131,7 +131,7 @@ class PedroApp(App):
         log = self.query_one("#output", RichLog)
 
         def emit(token: str) -> None:
-            self.call_from_thread(log.write, token, end="")
+            self.call_from_thread(log.write, token)
 
         def log_fn(msg: str) -> None:
             self.call_from_thread(log.write, msg)
