@@ -137,7 +137,7 @@ def research(
                 ok("Answer is sufficient.")
                 step("Final answer:\n")
                 synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
-                return
+                break
             info(f"→ {len(followups)} follow-up sub-question(s) identified:")
             for i, sq in enumerate(followups, 1):
                 info(f"  {i}. {sq}")
@@ -168,3 +168,14 @@ def research(
 
     step("Synthesizing final answer...\n")
     synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+
+    pages_by_file: dict[str, set[int]] = {}
+    for finding in all_findings:
+        for chunk in finding["chunks"]:
+            pages_by_file.setdefault(chunk["source_file"], set()).add(chunk["page_num"])
+
+    if pages_by_file:
+        step("Sources:")
+        for filename in sorted(pages_by_file):
+            pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
+            info(f"{filename} — pages {pages}")
