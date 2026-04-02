@@ -58,11 +58,13 @@ class PedroApp(App):
     BINDINGS = [
         Binding("tab", "toggle_mode", "Toggle mode", show=True, priority=True),
         Binding("escape", "cancel", "Cancel", show=True),
-        Binding("ctrl+c", "quit", "Quit", show=True),
+        Binding("ctrl+c", "copy_answer", "Copy answer", show=True),
+        Binding("ctrl+q", "quit", "Quit", show=True),
     ]
 
     mode: reactive[str] = reactive("ask")
     _current_worker: Worker | None = None
+    _last_answer: str = ""
 
     def compose(self) -> ComposeResult:
         yield RichLog(id="output", wrap=True, markup=True, highlight=False)
@@ -93,6 +95,11 @@ class PedroApp(App):
         idx = _MODES.index(self.mode)
         self.mode = _MODES[(idx + 1) % len(_MODES)]
         log.write(f"\n[bold cyan]>[/bold cyan] Mode changed to [bold cyan]{self.mode}[/bold cyan]\n")
+
+    def action_copy_answer(self) -> None:
+        if self._last_answer:
+            self.copy_to_clipboard(self._last_answer)
+            self.notify("Answer copied to clipboard")
 
     def action_cancel(self) -> None:
         if self._current_worker and self._current_worker.is_running:
@@ -154,6 +161,7 @@ class PedroApp(App):
                 on_token=emit,
             )
             answer = "".join(buf)
+            self._last_answer = answer
             self.call_from_thread(log.write, answer)
             self.call_from_thread(log.write, f"[dim]model: {LLM_MODEL}[/dim]")
         except InterruptedError:
@@ -192,6 +200,7 @@ class PedroApp(App):
                 on_token=emit,
             )
             answer = "".join(buf)
+            self._last_answer = answer
             self.call_from_thread(log.write, answer)
             self.call_from_thread(log.write, f"[dim]model: {LLM_MODEL}[/dim]")
         except InterruptedError:
