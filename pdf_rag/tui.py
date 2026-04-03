@@ -36,8 +36,9 @@ RichLog {
     padding: 0 1;
 }
 
-#stream {
+#streaming {
     height: auto;
+    max-height: 50vh;
     padding: 0 1;
 }
 
@@ -75,7 +76,7 @@ class PedroApp(App):
 
     def compose(self) -> ComposeResult:
         yield RichLog(id="output", wrap=True, markup=True, highlight=False)
-        yield Static("", id="stream")
+        yield Static("", id="streaming")
         yield Static("", id="status")
         yield Input(placeholder="Ask a question… (Tab to switch mode)", id="input")
         yield Footer()
@@ -99,6 +100,9 @@ class PedroApp(App):
         self.query_one("#status", Static).update(
             f" mode: [bold]{mode}[/bold]  │  {models}"
         )
+
+    def _set_streaming(self, text: str) -> None:
+        self.query_one("#streaming", Static).update(text)
 
     def action_toggle_mode(self) -> None:
         log = self.query_one("#output", RichLog)
@@ -142,7 +146,7 @@ class PedroApp(App):
     def action_cancel(self) -> None:
         if self._current_worker and self._current_worker.is_running:
             self._current_worker.cancel()
-            self.query_one("#stream", Static).update("")
+            self.call_from_thread(self._set_streaming, "")
             self.query_one("#output", RichLog).write("\n[yellow]Cancelled.[/yellow]\n")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -161,14 +165,13 @@ class PedroApp(App):
 
     def _do_ask(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
-        stream = self.query_one("#stream", Static)
         buf: list[str] = []
 
         def emit(token: str) -> None:
             if get_current_worker().is_cancelled:
                 raise InterruptedError
             buf.append(token)
-            self.call_from_thread(stream.update, "".join(buf))
+            self.call_from_thread(self._set_streaming, "".join(buf))
 
         def log_line(msg: str) -> None:
             self.call_from_thread(log.write, msg)
@@ -203,30 +206,27 @@ class PedroApp(App):
             self._history.append({"mode": self.mode, "question": question, "answer": answer})
             self._history_idx = -1
             self._session_log.append(self.mode, question, answer)
+            self.call_from_thread(self._set_streaming, "")
             self.call_from_thread(log.write, answer)
-            self.call_from_thread(log.write, f"[dim]model: {LLM_MODEL}[/dim]")
         except InterruptedError:
-            pass
-        finally:
-            self.call_from_thread(stream.update, "")
+            self.call_from_thread(self._set_streaming, "")
 
     def _do_research(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
-        stream = self.query_one("#stream", Static)
         buf: list[str] = []
 
         def emit(token: str) -> None:
             if get_current_worker().is_cancelled:
                 raise InterruptedError
             buf.append(token)
-            self.call_from_thread(stream.update, "".join(buf))
+            self.call_from_thread(self._set_streaming, "".join(buf))
 
         def log_fn(msg: str) -> None:
             self.call_from_thread(log.write, msg)
 
         collection = _open_collection()
         try:
-            research(
+            pages_by_file = research(
                 question=question,
                 collection=collection,
                 base_url=OLLAMA_BASE_URL,
@@ -245,12 +245,15 @@ class PedroApp(App):
             self._history.append({"mode": self.mode, "question": question, "answer": answer})
             self._history_idx = -1
             self._session_log.append(self.mode, question, answer)
+            self.call_from_thread(self._set_streaming, "")
             self.call_from_thread(log.write, answer)
-            self.call_from_thread(log.write, f"[dim]model: {LLM_MODEL}[/dim]")
+            if pages_by_file:
+                self.call_from_thread(log.write, "\n[bold]Sources:[/bold]")
+                for filename in sorted(pages_by_file):
+                    pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
+                    self.call_from_thread(log.write, f"[dim]  {filename} — pages {pages}[/dim]")
         except InterruptedError:
-            pass
-        finally:
-            self.call_from_thread(stream.update, "")
+            self.call_from_thread(self._set_streaming, "")
 
 
 def _open_collection():

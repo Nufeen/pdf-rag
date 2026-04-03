@@ -29,8 +29,7 @@ you can start using `pedro research` for multi-step reasoning.
 ```bash
 # 1. Clone and install
 git clone https://github.com/Nufeen/pdf-rag.git && cd pdf-rag
-make setup
-source .venv/bin/activate
+uv venv && source .venv/bin/activate && uv pip install -e .
 
 # 2. Point to your Ollama host and configure
 cp .env.example .env
@@ -123,20 +122,23 @@ and produce accurate citations rather than hallucinate beyond the provided excer
 
 ## macOS Setup
 
-macOS ships with an outdated system Python. Install a current version first:
+The recommended way to manage Python on macOS is [uv](https://docs.astral.sh/uv/) — it handles Python installation, virtual environments, and dependencies in one tool.
 
 ```bash
-# Install Homebrew (if not installed)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install Python 3.13
-brew install python@3.13
+# Install Python 3.13 and pin it for this project
+uv python install 3.13
+uv python pin 3.13
 
-# Verify
-python3.13 --version   # Python 3.13.x
+# Create venv and install dependencies
+uv venv
+source .venv/bin/activate
+uv pip install -e .
 ```
 
-Then proceed with `make setup` — it will pick up `python3.13` automatically.
+Then proceed with the Installation steps below.
 
 > [!NOTE]
 > Do not forget to allow local network usage for terminal sessions in mac os!
@@ -144,21 +146,10 @@ Then proceed with `make setup` — it will pick up `python3.13` automatically.
 
 ## Installation
 
-**With Make (recommended):**
-
 ```bash
-make setup
+uv venv
 source .venv/bin/activate
-```
-
-`make setup` creates a `.venv`, installs all dependencies, and prints next steps.
-
-**Manually:**
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
+uv pip install -e .
 ```
 
 **Copy and edit the env file:**
@@ -173,15 +164,6 @@ Then load it before running commands:
 ```bash
 export $(grep -v '^#' .env | xargs)
 ```
-
-**Available Make targets:**
-
-| Target         | Description                          |
-| -------------- | ------------------------------------ |
-| `make setup`   | Create venv and install dependencies |
-| `make venv`    | Create venv only                     |
-| `make install` | Install into existing venv           |
-| `make clean`   | Remove venv and build artifacts      |
 
 ## Indexing
 
