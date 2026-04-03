@@ -5,9 +5,9 @@ from ollama import Client
 from chromadb import Collection
 
 from .config import (
+    DEEP_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
-    LLM_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
@@ -142,7 +142,7 @@ def research(
     question: str,
     collection: Collection,
     base_url: str = OLLAMA_BASE_URL,
-    llm_model: str = LLM_MODEL,
+    llm_model: str = DEEP_MODEL,
     fast_model: str = FAST_MODEL,
     tiny_model: str = TINY_MODEL,
     embed_model: str = EMBED_MODEL,

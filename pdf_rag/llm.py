@@ -3,7 +3,7 @@ from pathlib import Path
 
 from ollama import Client
 
-from .config import LLM_MODEL, OLLAMA_BASE_URL
+from .config import DEEP_MODEL, OLLAMA_BASE_URL
 
 
 _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
@@ -39,7 +39,7 @@ def generate_answer(
     question: str,
     chunks: list[dict],
     base_url: str = OLLAMA_BASE_URL,
-    llm_model: str = LLM_MODEL,
+    llm_model: str = DEEP_MODEL,
     stream: bool = True,
     on_token: Callable[[str], None] | None = None,
 ) -> str:

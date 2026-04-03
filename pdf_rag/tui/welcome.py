@@ -1,6 +1,6 @@
 from textual.widgets import RichLog
 
-from ..config import FAST_MODEL, LLM_MODEL, SEARCH_LANGUAGES, TINY_MODEL
+from ..config import FAST_MODEL, DEEP_MODEL, SEARCH_LANGUAGES, TINY_MODEL
 
 _BANNER = """\
 [bold green]🌵 pedro[/bold green] — local RAG for your PDF library
@@ -26,8 +26,8 @@ def write_welcome(log: RichLog) -> None:
             f"(translate model: {TINY_MODEL})[/dim]"
         )
     log.write(
-        f"\n  [dim]models: {LLM_MODEL}"
-        + (f"  ·  {FAST_MODEL}" if FAST_MODEL != LLM_MODEL else "")
+        f"\n  [dim]models: {DEEP_MODEL}"
+        + (f"  ·  {FAST_MODEL}" if FAST_MODEL != DEEP_MODEL else "")
         + (f"  ·  {TINY_MODEL}" if TINY_MODEL != FAST_MODEL else "")
         + "[/dim]\n"
     )

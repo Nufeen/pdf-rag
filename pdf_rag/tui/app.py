@@ -6,11 +6,11 @@ from textual.widgets import Footer, Input, RichLog, Static
 from textual.worker import Worker, get_current_worker
 
 from ..config import (
-    CHROMA_DB_PATH,
+    DB_PATH,
     COLLECTION_NAME,
     EMBED_MODEL,
     FAST_MODEL,
-    LLM_MODEL,
+    DEEP_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
@@ -98,9 +98,9 @@ class PedroApp(App):
     def _update_status(self) -> None:
         mode = self.mode
         if mode == "ask":
-            models = f"model: [dim]{LLM_MODEL}[/dim]"
+            models = f"model: [dim]{DEEP_MODEL}[/dim]"
         else:
-            models = f"deep: [dim]{LLM_MODEL}[/dim]  fast: [dim]{FAST_MODEL}[/dim]  tiny: [dim]{TINY_MODEL}[/dim]"
+            models = f"deep: [dim]{DEEP_MODEL}[/dim]  fast: [dim]{FAST_MODEL}[/dim]  tiny: [dim]{TINY_MODEL}[/dim]"
         self.query_one("#status", Static).update(
             f" mode: [bold]{mode}[/bold]  │  {models}"
         )
@@ -202,7 +202,7 @@ class PedroApp(App):
                 question=question,
                 chunks=chunks,
                 base_url=OLLAMA_BASE_URL,
-                llm_model=LLM_MODEL,
+                llm_model=DEEP_MODEL,
                 on_token=emit,
             )
             answer = "".join(buf)
@@ -234,7 +234,7 @@ class PedroApp(App):
                 question=question,
                 collection=collection,
                 base_url=OLLAMA_BASE_URL,
-                llm_model=LLM_MODEL,
+                llm_model=DEEP_MODEL,
                 fast_model=FAST_MODEL,
                 tiny_model=TINY_MODEL,
                 embed_model=EMBED_MODEL,
@@ -263,7 +263,7 @@ class PedroApp(App):
 
 
 def _open_collection():
-    client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
+    client = chromadb.PersistentClient(path=DB_PATH)
     return client.get_or_create_collection(
         COLLECTION_NAME,
         metadata={"hnsw:space": "cosine"},

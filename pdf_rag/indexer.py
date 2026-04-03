@@ -10,7 +10,7 @@ from tqdm import tqdm
 from .chunker import split_text
 from .config import (
     CHROMA_BATCH_SIZE,
-    CHROMA_DB_PATH,
+    DB_PATH,
     CHUNK_OVERLAP,
     CHUNK_SIZE,
     COLLECTION_NAME,
@@ -57,7 +57,7 @@ def chunk_id(source_file: str, page_num: int, chunk_idx: int) -> str:
 
 def index_folder(
     folder_path: str,
-    db_path: str = CHROMA_DB_PATH,
+    db_path: str = DB_PATH,
     embed_model: str = EMBED_MODEL,
     base_url: str = OLLAMA_BASE_URL,
     force: bool = False,

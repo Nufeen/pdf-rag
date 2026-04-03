@@ -2,11 +2,11 @@ import click
 import chromadb
 
 from .config import (
-    CHROMA_DB_PATH,
     COLLECTION_NAME,
+    DB_PATH,
+    DEEP_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
-    LLM_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
@@ -32,7 +32,7 @@ def cli(ctx):
 
 @cli.command()
 @click.argument("folder", type=click.Path(exists=True, file_okay=False))
-@click.option("--db-path", default=CHROMA_DB_PATH, show_default=True, help="ChromaDB storage path")
+@click.option("--db-path", default=DB_PATH, show_default=True, help="ChromaDB storage path")
 @click.option("--embed-model", default=EMBED_MODEL, show_default=True, help="Ollama embedding model")
 @click.option("--ollama-url", envvar="OLLAMA_BASE_URL", default=OLLAMA_BASE_URL, show_default=True, help="Ollama base URL")
 @click.option("--force", is_flag=True, help="Re-index all files, ignoring existing index")
@@ -49,13 +49,13 @@ def index(folder, db_path, embed_model, ollama_url, force):
 
 @cli.command()
 @click.argument("question")
-@click.option("--db-path", default=CHROMA_DB_PATH, show_default=True, help="ChromaDB storage path")
-@click.option("--model", default=LLM_MODEL, show_default=True, help="Ollama LLM model")
+@click.option("--db-path", default=DB_PATH, show_default=True, help="ChromaDB storage path")
+@click.option("--deep-model", default=DEEP_MODEL, show_default=True, help="Ollama LLM model")
 @click.option("--embed-model", default=EMBED_MODEL, show_default=True, help="Ollama embedding model")
 @click.option("--ollama-url", envvar="OLLAMA_BASE_URL", default=OLLAMA_BASE_URL, show_default=True, help="Ollama base URL")
 @click.option("--top-k", default=TOP_K, show_default=True, type=int, help="Number of chunks to retrieve")
 @click.option("--no-sources", is_flag=True, help="Hide retrieved source list")
-def ask(question, db_path, model, embed_model, ollama_url, top_k, no_sources):
+def ask(question, db_path, deep_model, embed_model, ollama_url, top_k, no_sources):
     """Ask a QUESTION against the indexed PDF library."""
     client = chromadb.PersistentClient(path=db_path)
     collection = client.get_or_create_collection(
@@ -86,15 +86,15 @@ def ask(question, db_path, model, embed_model, ollama_url, top_k, no_sources):
         question=question,
         chunks=chunks,
         base_url=ollama_url,
-        llm_model=model,
+        llm_model=deep_model,
     )
-    click.echo(click.style(f"model: {model}", fg="bright_black"))
+    click.echo(click.style(f"model: {deep_model}", fg="bright_black"))
 
 
 @cli.command("research")
 @click.argument("question")
-@click.option("--db-path", default=CHROMA_DB_PATH, show_default=True, help="ChromaDB storage path")
-@click.option("--model", default=LLM_MODEL, show_default=True, help="Quality model for final synthesis")
+@click.option("--db-path", default=DB_PATH, show_default=True, help="ChromaDB storage path")
+@click.option("--deep-model", default=DEEP_MODEL, show_default=True, help="Quality model for final synthesis")
 @click.option("--fast-model", default=FAST_MODEL, show_default=True, help="Model for sub-question answers and intermediate synthesis")
 @click.option("--tiny-model", default=TINY_MODEL, show_default=True, help="Model for planning and reflection (3B recommended)")
 @click.option("--embed-model", default=EMBED_MODEL, show_default=True, help="Ollama embedding model")
@@ -104,7 +104,7 @@ def ask(question, db_path, model, embed_model, ollama_url, top_k, no_sources):
 @click.option("--top-k", default=TOP_K, show_default=True, type=int, help="Chunks retrieved per sub-question")
 @click.option("--languages", default=",".join(SEARCH_LANGUAGES), show_default=True, help="Comma-separated languages for query translation (e.g. Russian,French)")
 @click.option("--translate-model", default=TRANSLATE_MODEL, show_default=True, help="Model used for query translation")
-def research_cmd(question, db_path, model, fast_model, tiny_model, embed_model, ollama_url, depth, sub_questions, top_k, languages, translate_model):
+def research_cmd(question, db_path, deep_model, fast_model, tiny_model, embed_model, ollama_url, depth, sub_questions, top_k, languages, translate_model):
     """Deep multi-step research over the indexed PDF library."""
     client = chromadb.PersistentClient(path=db_path)
     collection = client.get_or_create_collection(
@@ -115,7 +115,7 @@ def research_cmd(question, db_path, model, fast_model, tiny_model, embed_model, 
         question=question,
         collection=collection,
         base_url=ollama_url,
-        llm_model=model,
+        llm_model=deep_model,
         fast_model=fast_model,
         tiny_model=tiny_model,
         embed_model=embed_model,
@@ -130,4 +130,9 @@ def research_cmd(question, db_path, model, fast_model, tiny_model, embed_model, 
         for filename in sorted(pages_by_file):
             pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
             click.echo(click.style(f"  {filename} — pages {pages}", fg="bright_black"))
-    click.echo(click.style(f"model: {model}", fg="bright_black"))
+    models_line = deep_model
+    if fast_model != deep_model:
+        models_line += f"  ·  {fast_model}"
+    if tiny_model != fast_model:
+        models_line += f"  ·  {tiny_model}"
+    click.echo(click.style(f"models: {models_line}", fg="bright_black"))
