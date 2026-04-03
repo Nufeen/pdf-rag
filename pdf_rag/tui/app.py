@@ -5,7 +5,7 @@ from textual.reactive import reactive
 from textual.widgets import Footer, Input, RichLog, Static
 from textual.worker import Worker, get_current_worker
 
-from .config import (
+from ..config import (
     CHROMA_DB_PATH,
     COLLECTION_NAME,
     EMBED_MODEL,
@@ -20,10 +20,11 @@ from .config import (
     TOP_K,
     TRANSLATE_MODEL,
 )
-from .llm import generate_answer
-from .researcher import research
-from .retriever import query
-from .session_log import SessionLog
+from ..llm import generate_answer
+from ..researcher import research
+from ..retriever import query
+from ..session_log import SessionLog
+from .welcome import write_welcome
 
 _MODES = ("ask", "research")
 
@@ -87,6 +88,7 @@ class PedroApp(App):
         self._session_log = SessionLog(SESSIONS_PATH)
         self._history = []
         self._history_idx = -1
+        write_welcome(self.query_one("#output", RichLog))
         self._update_status()
         self.query_one(Input).focus()
 
