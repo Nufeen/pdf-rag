@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from .chunker import split_text
 from .config import (
+    CHROMA_BATCH_SIZE,
     CHROMA_DB_PATH,
     CHUNK_OVERLAP,
     CHUNK_SIZE,
@@ -91,6 +92,7 @@ def index_folder(
             include=[],
         )
         if old["ids"]:
+            # delete() is not subject to the SQLite batch size limit
             collection.delete(ids=old["ids"])
 
         pages = extract_pages(str(pdf_path))
@@ -143,10 +145,11 @@ def index_folder(
             for c in all_chunks
         ]
 
-        collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            documents=texts,
-            metadatas=metadatas,
-        )
+        for i in range(0, len(all_chunks), CHROMA_BATCH_SIZE):
+            collection.add(
+                ids=ids[i : i + CHROMA_BATCH_SIZE],
+                embeddings=embeddings[i : i + CHROMA_BATCH_SIZE],
+                documents=texts[i : i + CHROMA_BATCH_SIZE],
+                metadatas=metadatas[i : i + CHROMA_BATCH_SIZE],
+            )
         print(f"Indexed: {pdf_path.name} ({len(all_chunks)} chunks)")
