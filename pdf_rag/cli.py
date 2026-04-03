@@ -10,8 +10,10 @@ from .config import (
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
+    SEARCH_LANGUAGES,
     TINY_MODEL,
     TOP_K,
+    TRANSLATE_MODEL,
 )
 from .indexer import index_folder
 from .llm import generate_answer
@@ -100,7 +102,9 @@ def ask(question, db_path, model, embed_model, ollama_url, top_k, no_sources):
 @click.option("--depth", default=RESEARCH_DEPTH, show_default=True, type=int, help="Max reflection iterations")
 @click.option("--sub-questions", default=RESEARCH_N_SUBQUESTIONS, show_default=True, type=int, help="Sub-questions per iteration")
 @click.option("--top-k", default=TOP_K, show_default=True, type=int, help="Chunks retrieved per sub-question")
-def research_cmd(question, db_path, model, fast_model, tiny_model, embed_model, ollama_url, depth, sub_questions, top_k):
+@click.option("--languages", default=",".join(SEARCH_LANGUAGES), show_default=True, help="Comma-separated languages for query translation (e.g. Russian,French)")
+@click.option("--translate-model", default=TRANSLATE_MODEL, show_default=True, help="Model used for query translation")
+def research_cmd(question, db_path, model, fast_model, tiny_model, embed_model, ollama_url, depth, sub_questions, top_k, languages, translate_model):
     """Deep multi-step research over the indexed PDF library."""
     client = chromadb.PersistentClient(path=db_path)
     collection = client.get_or_create_collection(
@@ -118,6 +122,8 @@ def research_cmd(question, db_path, model, fast_model, tiny_model, embed_model, 
         depth=depth,
         n_subquestions=sub_questions,
         top_k=top_k,
+        languages=[l.strip() for l in languages.split(",") if l.strip()],
+        translate_model=translate_model,
     )
     if pages_by_file:
         click.echo(click.style("\n🪅 Sources:", fg="yellow", bold=True))

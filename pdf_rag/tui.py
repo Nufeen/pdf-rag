@@ -14,9 +14,11 @@ from .config import (
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
+    SEARCH_LANGUAGES,
     SESSIONS_PATH,
     TINY_MODEL,
     TOP_K,
+    TRANSLATE_MODEL,
 )
 from .llm import generate_answer
 from .researcher import research
@@ -237,6 +239,8 @@ class PedroApp(App):
                 depth=RESEARCH_DEPTH,
                 n_subquestions=RESEARCH_N_SUBQUESTIONS,
                 top_k=TOP_K,
+                languages=SEARCH_LANGUAGES,
+                translate_model=TRANSLATE_MODEL,
                 log_fn=log_fn,
                 on_token=emit,
             )

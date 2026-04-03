@@ -282,6 +282,70 @@ RESEARCH_N_SUBQUESTIONS=3
 
 [How it works](adr/0000-deep-research-mode.md)
 
+## Multilingual Libraries
+
+If your PDF collection contains books in multiple languages, retrieval quality drops when the query language differs from the document language. There are two ways to handle this.
+
+### Option 1 — Multilingual embedding model (recommended)
+
+Switch to an embedding model that maps all languages into the same vector space. No translation step, no extra latency per query — but requires a full re-index.
+
+```bash
+# Pull a multilingual embedding model
+ollama pull bge-m3   # already listed in the embedding table above
+
+# Set it in .env
+RAG_EMBED_MODEL=bge-m3
+
+# Re-index everything
+pedro index ~/Books/ --force
+```
+
+`bge-m3` handles 100+ languages and is the cleanest long-term solution.
+
+### Option 2 — Query translation at search time
+
+If you want to keep the existing index, enable query translation. For each sub-question in `pedro research`, pedro will translate the query into each configured language and merge the results before generating an answer.
+
+```bash
+# In .env
+RAG_SEARCH_LANGUAGES=Russian,French
+RAG_TRANSLATE_MODEL=qwen2.5:3b   # any small model works; defaults to RAG_TINY_MODEL
+```
+
+Or pass per-run via CLI:
+
+```bash
+pedro research "What is entropy?" --languages Russian,French
+pedro research "What is entropy?" --languages Russian --translate-model qwen2.5:3b
+```
+
+During research, translated queries are shown inline in the log:
+
+```
+🪅 Executing 3 sub-question(s)...
+  [1/3] What is entropy?
+  (→ Russian: Что такое энтропия?)
+  (→ French: Qu'est-ce que l'entropie ?)
+```
+
+**Notes:**
+- Translation only runs in `pedro research`, not in `pedro ask`
+- Each language adds one extra embedding + retrieval call per sub-question
+- The translation model needs to be pulled: `ollama pull qwen2.5:3b`
+- Chunks retrieved across languages are deduplicated before answer generation
+
+### Which option to choose
+
+| | Multilingual embeddings | Query translation |
+|---|---|---|
+| Re-index required | Yes | No |
+| Extra latency per query | None | 1 LLM call × N languages per subquestion |
+| Works in `pedro ask` | Yes | No |
+| Works in `pedro research` | Yes | Yes |
+
+If you are starting fresh or can afford a re-index, use `bge-m3`. If you have an existing index and want to extend coverage without re-indexing, use `RAG_SEARCH_LANGUAGES`.
+
 ## Re-indexing Everything
 
 Use `--force` to re-index all files, for example after changing chunk size:
@@ -305,6 +369,8 @@ pedro index ~/Books/ --force
 | `RAG_TOP_K`               | `5`                      | Chunks retrieved per query                                                     |
 | `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`                                 |
 | `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`                               |
+| `RAG_SEARCH_LANGUAGES`    | `` (disabled)            | Comma-separated languages for query translation in `pedro research` (e.g. `Russian,French`) |
+| `RAG_TRANSLATE_MODEL`     | `RAG_TINY_MODEL`         | Model used to translate sub-questions when `RAG_SEARCH_LANGUAGES` is set       |
 
 All variables can also be passed as CLI flags — run `pedro index --help`, `pedro ask --help`, or `pedro research --help` for details.
 
@@ -326,6 +392,7 @@ All prompts live in the `prompts/` folder. Edit any file directly — changes ta
 | `prompts/plan_subquestions.txt` | `pedro research` | Instructs the model to decompose the question into N sub-questions                    |
 | `prompts/reflect.txt`           | `pedro research` | Asks the model to evaluate completeness and identify gaps in the current answer       |
 | `prompts/synthesize.txt`        | `pedro research` | Instructs the model to combine all research findings into a final answer              |
+| `prompts/translate_question.txt`| `pedro research` | Translates a sub-question into a target language (used when `RAG_SEARCH_LANGUAGES` is set) |
 
 Prompt files support `{placeholders}` that are filled at runtime (e.g. `{question}`, `{n}`, `{answer}`, `{context}`). Do not remove placeholders — the tool will fail if they are missing.
 

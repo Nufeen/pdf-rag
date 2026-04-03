@@ -27,3 +27,7 @@ COLLECTION_NAME = "pdf_books"
 EMBED_BATCH_SIZE = 32
 RESEARCH_DEPTH = _int("RESEARCH_DEPTH", 2)
 RESEARCH_N_SUBQUESTIONS = _int("RESEARCH_N_SUBQUESTIONS", 3)
+SEARCH_LANGUAGES: list[str] = [
+    l.strip() for l in os.environ.get("RAG_SEARCH_LANGUAGES", "").split(",") if l.strip()
+]
+TRANSLATE_MODEL: str = os.environ.get("RAG_TRANSLATE_MODEL", TINY_MODEL)

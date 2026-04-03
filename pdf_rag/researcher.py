@@ -11,8 +11,10 @@ from .config import (
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
+    SEARCH_LANGUAGES,
     TINY_MODEL,
     TOP_K,
+    TRANSLATE_MODEL,
 )
 from .llm import generate_answer, load_prompt
 from .retriever import query
@@ -82,6 +84,43 @@ def synthesize(
         raise
 
 
+def translate_question(text: str, lang: str, client: Client, model: str) -> str:
+    prompt = load_prompt("translate_question", text=text, lang=lang)
+    response = client.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        stream=False,
+    )
+    return response["message"]["content"].strip()
+
+
+def retrieve_multilingual(
+    question: str,
+    collection: Collection,
+    embed_model: str,
+    base_url: str,
+    top_k: int,
+    languages: list[str],
+    translate_model: str,
+    client: Client,
+    log_fn: Callable[[str], None] | None = None,
+) -> list[dict]:
+    chunks = query(question, collection, embed_model, base_url, top_k)
+    if not languages:
+        return chunks
+    seen = {(c["source_file"], c["page_num"], c["text"][:40]) for c in chunks}
+    for lang in languages:
+        translated = translate_question(question, lang, client, translate_model)
+        if log_fn:
+            log_fn(f"  [dim](→ {lang}: {translated})[/dim]")
+        for c in query(translated, collection, embed_model, base_url, top_k):
+            key = (c["source_file"], c["page_num"], c["text"][:40])
+            if key not in seen:
+                chunks.append(c)
+                seen.add(key)
+    return chunks
+
+
 def _step(msg: str) -> None:
     click.echo(click.style(f"\n🪅 {msg}", fg="yellow", bold=True))
 
@@ -110,6 +149,8 @@ def research(
     depth: int = RESEARCH_DEPTH,
     n_subquestions: int = RESEARCH_N_SUBQUESTIONS,
     top_k: int = TOP_K,
+    languages: list[str] = SEARCH_LANGUAGES,
+    translate_model: str = TRANSLATE_MODEL,
     log_fn: Callable[[str], None] | None = None,
     on_token: Callable[[str], None] | None = None,
 ) -> None:
@@ -146,12 +187,16 @@ def research(
         step(f"Executing {len(subquestions)} sub-question(s)...")
         for i, sq in enumerate(subquestions, 1):
             subq(i, len(subquestions), sq)
-            chunks = query(
+            chunks = retrieve_multilingual(
                 question=sq,
                 collection=collection,
                 embed_model=embed_model,
                 base_url=base_url,
                 top_k=top_k,
+                languages=languages,
+                translate_model=translate_model,
+                client=client,
+                log_fn=log_fn,
             )
             if not chunks:
                 info("(no relevant content found)")

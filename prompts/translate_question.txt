@@ -1,0 +1,3 @@
+Translate the following question to {lang}. Output only the translated question, nothing else.
+
+Question: {text}
