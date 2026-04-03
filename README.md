@@ -159,12 +159,6 @@ cp .env.example .env
 # edit .env — set OLLAMA_BASE_URL to your Ollama host IP
 ```
 
-Then load it before running commands:
-
-```bash
-export $(grep -v '^#' .env | xargs)
-```
-
 ## Indexing
 
 Scan a folder and index all PDFs:
@@ -330,6 +324,7 @@ During research, translated queries are shown inline in the log:
 ```
 
 **Notes:**
+
 - Translation only runs in `pedro research`, not in `pedro ask`
 - Each language adds one extra embedding + retrieval call per sub-question
 - The translation model needs to be pulled: `ollama pull qwen2.5:3b`
@@ -337,12 +332,12 @@ During research, translated queries are shown inline in the log:
 
 ### Which option to choose
 
-| | Multilingual embeddings | Query translation |
-|---|---|---|
-| Re-index required | Yes | No |
-| Extra latency per query | None | 1 LLM call × N languages per subquestion |
-| Works in `pedro ask` | Yes | No |
-| Works in `pedro research` | Yes | Yes |
+|                           | Multilingual embeddings | Query translation                        |
+| ------------------------- | ----------------------- | ---------------------------------------- |
+| Re-index required         | Yes                     | No                                       |
+| Extra latency per query   | None                    | 1 LLM call × N languages per subquestion |
+| Works in `pedro ask`      | Yes                     | No                                       |
+| Works in `pedro research` | Yes                     | Yes                                      |
 
 If you are starting fresh or can afford a re-index, use `bge-m3`. If you have an existing index and want to extend coverage without re-indexing, use `RAG_SEARCH_LANGUAGES`.
 
@@ -356,21 +351,21 @@ pedro index ~/Books/ --force
 
 ## Environment Variables
 
-| Variable                  | Default                  | Description                                                                    |
-| ------------------------- | ------------------------ | ------------------------------------------------------------------------------ |
-| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                                                |
-| `RAG_DB_PATH`             | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                                          |
-| `RAG_EMBED_MODEL`         | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`)                         |
-| `RAG_DEEP_MODEL`          | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`) |
-| `RAG_FAST_MODEL`          | `RAG_DEEP_MODEL`         | Medium model — per-sub-question answers and intermediate synthesis             |
-| `RAG_TINY_MODEL`          | `RAG_FAST_MODEL`         | Fast model — planning and reflection (3B recommended, e.g. `qwen2.5:3b`)       |
-| `RAG_CHUNK_SIZE`          | `800`                    | Characters per chunk                                                           |
-| `RAG_CHUNK_OVERLAP`       | `150`                    | Overlap between chunks                                                         |
-| `RAG_TOP_K`               | `5`                      | Chunks retrieved per query                                                     |
-| `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`                                 |
-| `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`                               |
+| Variable                  | Default                  | Description                                                                                 |
+| ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------- |
+| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                                                             |
+| `RAG_DB_PATH`             | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                                                       |
+| `RAG_EMBED_MODEL`         | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`)                                      |
+| `RAG_DEEP_MODEL`          | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`)              |
+| `RAG_FAST_MODEL`          | `RAG_DEEP_MODEL`         | Medium model — per-sub-question answers and intermediate synthesis                          |
+| `RAG_TINY_MODEL`          | `RAG_FAST_MODEL`         | Fast model — planning and reflection (3B recommended, e.g. `qwen2.5:3b`)                    |
+| `RAG_CHUNK_SIZE`          | `800`                    | Characters per chunk                                                                        |
+| `RAG_CHUNK_OVERLAP`       | `150`                    | Overlap between chunks                                                                      |
+| `RAG_TOP_K`               | `5`                      | Chunks retrieved per query                                                                  |
+| `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`                                              |
+| `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`                                            |
 | `RAG_SEARCH_LANGUAGES`    | `` (disabled)            | Comma-separated languages for query translation in `pedro research` (e.g. `Russian,French`) |
-| `RAG_TRANSLATE_MODEL`     | `RAG_TINY_MODEL`         | Model used to translate sub-questions when `RAG_SEARCH_LANGUAGES` is set       |
+| `RAG_TRANSLATE_MODEL`     | `RAG_TINY_MODEL`         | Model used to translate sub-questions when `RAG_SEARCH_LANGUAGES` is set                    |
 
 All variables can also be passed as CLI flags — run `pedro index --help`, `pedro ask --help`, or `pedro research --help` for details.
 
@@ -386,13 +381,13 @@ All variables can also be passed as CLI flags — run `pedro index --help`, `ped
 
 All prompts live in the `prompts/` folder. Edit any file directly — changes take effect on the next command, no reinstall needed.
 
-| File                            | Used by          | Purpose                                                                               |
-| ------------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
-| `prompts/answer.txt`            | `pedro ask`      | System prompt for answer generation — controls tone, citation format, grounding rules |
-| `prompts/plan_subquestions.txt` | `pedro research` | Instructs the model to decompose the question into N sub-questions                    |
-| `prompts/reflect.txt`           | `pedro research` | Asks the model to evaluate completeness and identify gaps in the current answer       |
-| `prompts/synthesize.txt`        | `pedro research` | Instructs the model to combine all research findings into a final answer              |
-| `prompts/translate_question.txt`| `pedro research` | Translates a sub-question into a target language (used when `RAG_SEARCH_LANGUAGES` is set) |
+| File                             | Used by          | Purpose                                                                                    |
+| -------------------------------- | ---------------- | ------------------------------------------------------------------------------------------ |
+| `prompts/answer.txt`             | `pedro ask`      | System prompt for answer generation — controls tone, citation format, grounding rules      |
+| `prompts/plan_subquestions.txt`  | `pedro research` | Instructs the model to decompose the question into N sub-questions                         |
+| `prompts/reflect.txt`            | `pedro research` | Asks the model to evaluate completeness and identify gaps in the current answer            |
+| `prompts/synthesize.txt`         | `pedro research` | Instructs the model to combine all research findings into a final answer                   |
+| `prompts/translate_question.txt` | `pedro research` | Translates a sub-question into a target language (used when `RAG_SEARCH_LANGUAGES` is set) |
 
 Prompt files support `{placeholders}` that are filled at runtime (e.g. `{question}`, `{n}`, `{answer}`, `{context}`). Do not remove placeholders — the tool will fail if they are missing.
 
