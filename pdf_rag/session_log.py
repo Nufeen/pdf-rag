@@ -9,6 +9,22 @@ class SessionLog:
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.path = sessions_dir / f"{ts}.jsonl"
 
+    @staticmethod
+    def load_latest(sessions_dir: Path) -> list[dict]:
+        files = sorted(sessions_dir.glob("*.jsonl"))
+        if not files:
+            return []
+        entries = []
+        with files[-1].open() as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entries.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+        return entries
+
     def append(self, mode: str, question: str, answer: str) -> None:
         entry = {
             "ts": datetime.now().isoformat(timespec="seconds"),

@@ -17,7 +17,7 @@ _BANNER = """\
 """
 
 
-def write_welcome(log: RichLog) -> None:
+def write_welcome(log: RichLog, history_count: int = 0) -> None:
     log.write(_BANNER)
     if SEARCH_LANGUAGES:
         langs = ", ".join(SEARCH_LANGUAGES)
@@ -29,5 +29,8 @@ def write_welcome(log: RichLog) -> None:
         f"\n  [dim]models: {DEEP_MODEL}"
         + (f"  ·  {FAST_MODEL}" if FAST_MODEL != DEEP_MODEL else "")
         + (f"  ·  {TINY_MODEL}" if TINY_MODEL != FAST_MODEL else "")
-        + "[/dim]\n"
+        + "[/dim]"
     )
+    if history_count:
+        log.write(f"\n  [dim]↑ {history_count} question(s) restored from previous session[/dim]")
+    log.write("")

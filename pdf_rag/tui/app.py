@@ -86,9 +86,9 @@ class PedroApp(App):
 
     def on_mount(self) -> None:
         self._session_log = SessionLog(SESSIONS_PATH)
-        self._history = []
+        self._history = SessionLog.load_latest(SESSIONS_PATH)
         self._history_idx = -1
-        write_welcome(self.query_one("#output", RichLog))
+        write_welcome(self.query_one("#output", RichLog), len(self._history))
         self._update_status()
         self.query_one(Input).focus()
 
