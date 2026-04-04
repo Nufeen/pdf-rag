@@ -199,6 +199,12 @@ pedro index ~/Books/
 
 Only the new file is processed. Existing books are skipped instantly.
 
+> [!NOTE]
+> Take care of library size, ChromaDB has RAM limitations
+> If index size will be greater than machine RAM it can trigger errors:
+> https://github.com/chroma-core/chroma/issues/1323
+> For now it will work only with reasonable local library sizes
+
 ## Querying
 
 ```bash
@@ -370,19 +376,19 @@ pedro index ~/Books/ --force
 
 | Variable                  | Default                  | Description                                                                                 |
 | ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------- |
-| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                                                          |
-| `DB_PATH`                 | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                                                    |
-| `EMBED_MODEL`             | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`)                                   |
-| `DEEP_MODEL`              | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`)           |
-| `FAST_MODEL`              | `DEEP_MODEL`             | Medium model — per-sub-question answers and intermediate synthesis                       |
-| `TINY_MODEL`              | `FAST_MODEL`             | Fast model — planning and reflection (3B recommended, e.g. `qwen2.5:3b`)                 |
-| `CHUNK_SIZE`              | `800`                    | Characters per chunk                                                                     |
-| `CHUNK_OVERLAP`           | `150`                    | Overlap between chunks                                                                   |
-| `TOP_K`                   | `5`                      | Chunks retrieved per query                                                               |
-| `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`                                           |
-| `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`                                         |
+| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                                                             |
+| `DB_PATH`                 | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                                                       |
+| `EMBED_MODEL`             | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`)                                      |
+| `DEEP_MODEL`              | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`)              |
+| `FAST_MODEL`              | `DEEP_MODEL`             | Medium model — per-sub-question answers and intermediate synthesis                          |
+| `TINY_MODEL`              | `FAST_MODEL`             | Fast model — planning and reflection (3B recommended, e.g. `qwen2.5:3b`)                    |
+| `CHUNK_SIZE`              | `800`                    | Characters per chunk                                                                        |
+| `CHUNK_OVERLAP`           | `150`                    | Overlap between chunks                                                                      |
+| `TOP_K`                   | `5`                      | Chunks retrieved per query                                                                  |
+| `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`                                              |
+| `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`                                            |
 | `SEARCH_LANGUAGES`        | `` (disabled)            | Comma-separated languages for query translation in `pedro research` (e.g. `Russian,French`) |
-| `TRANSLATE_MODEL`         | `TINY_MODEL`             | Model used to translate sub-questions when `SEARCH_LANGUAGES` is set                    |
+| `TRANSLATE_MODEL`         | `TINY_MODEL`             | Model used to translate sub-questions when `SEARCH_LANGUAGES` is set                        |
 
 All variables can also be passed as CLI flags — run `pedro index --help`, `pedro ask --help`, or `pedro research --help` for details.
 
@@ -398,12 +404,12 @@ All variables can also be passed as CLI flags — run `pedro index --help`, `ped
 
 All prompts live in the `prompts/` folder. Edit any file directly — changes take effect on the next command, no reinstall needed.
 
-| File                             | Used by          | Purpose                                                                                    |
-| -------------------------------- | ---------------- | ------------------------------------------------------------------------------------------ |
-| `prompts/answer.txt`             | `pedro ask`      | System prompt for answer generation — controls tone, citation format, grounding rules      |
-| `prompts/plan_subquestions.txt`  | `pedro research` | Instructs the model to decompose the question into N sub-questions                         |
-| `prompts/reflect.txt`            | `pedro research` | Asks the model to evaluate completeness and identify gaps in the current answer            |
-| `prompts/synthesize.txt`         | `pedro research` | Instructs the model to combine all research findings into a final answer                   |
+| File                             | Used by          | Purpose                                                                                |
+| -------------------------------- | ---------------- | -------------------------------------------------------------------------------------- |
+| `prompts/answer.txt`             | `pedro ask`      | System prompt for answer generation — controls tone, citation format, grounding rules  |
+| `prompts/plan_subquestions.txt`  | `pedro research` | Instructs the model to decompose the question into N sub-questions                     |
+| `prompts/reflect.txt`            | `pedro research` | Asks the model to evaluate completeness and identify gaps in the current answer        |
+| `prompts/synthesize.txt`         | `pedro research` | Instructs the model to combine all research findings into a final answer               |
 | `prompts/translate_question.txt` | `pedro research` | Translates a sub-question into a target language (used when `SEARCH_LANGUAGES` is set) |
 
 Prompt files support `{placeholders}` that are filled at runtime (e.g. `{question}`, `{n}`, `{answer}`, `{context}`). Do not remove placeholders — the tool will fail if they are missing.
