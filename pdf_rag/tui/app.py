@@ -150,7 +150,7 @@ class PedroApp(App):
     def action_cancel(self) -> None:
         if self._current_worker and self._current_worker.is_running:
             self._current_worker.cancel()
-            self.call_from_thread(self._set_streaming, "")
+            self._set_streaming("")
             self.query_one("#output", RichLog).write("\n[yellow]Cancelled.[/yellow]\n")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
