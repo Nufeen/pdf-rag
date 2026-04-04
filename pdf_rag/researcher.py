@@ -84,6 +84,25 @@ def synthesize(
         raise
 
 
+def extract_citations(chunks: list[dict], base_url: str, model: str) -> str:
+    seen: set[tuple] = set()
+    unique_texts: list[str] = []
+    for chunk in chunks:
+        key = (chunk["source_file"], chunk["page_num"], chunk["text"][:40])
+        if key not in seen:
+            seen.add(key)
+            unique_texts.append(chunk["text"])
+    context = "\n\n---\n\n".join(unique_texts)
+    client = Client(host=base_url)
+    prompt = load_prompt("extract_citations", context=context)
+    response = client.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        stream=False,
+    )
+    return response["message"]["content"].strip()
+
+
 def own_take(question: str, base_url: str, model: str) -> str:
     client = Client(host=base_url)
     prompt = load_prompt("own_take", question=question)
@@ -242,3 +261,13 @@ def research(
         for filename in sorted(pages_by_file):
             pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
             info(f"{filename} — pages {pages}")
+
+    all_chunks = [chunk for finding in all_findings for chunk in finding["chunks"]]
+    if all_chunks:
+        citations = extract_citations(all_chunks, base_url, fast_model)
+        if citations:
+            step("Referenced in chunks:")
+            for line in citations.splitlines():
+                line = line.strip()
+                if line:
+                    info(line)

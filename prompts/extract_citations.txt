@@ -1,0 +1,7 @@
+From the following text excerpts, extract all citations, references, and mentions of external sources: author names with works, paper titles, book titles, journal names, URLs, or any bibliography-style entries.
+
+Return a plain list, one item per line, no extra commentary.
+If nothing is found, return an empty string and nothing else.
+
+Excerpts:
+{context}
