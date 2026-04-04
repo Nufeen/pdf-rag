@@ -39,12 +39,6 @@ RichLog {
     padding: 0 1;
 }
 
-#streaming {
-    height: auto;
-    max-height: 50vh;
-    padding: 0 1;
-}
-
 #status {
     height: 1;
     background: $primary-darken-2;
@@ -79,7 +73,6 @@ class PedroApp(App):
 
     def compose(self) -> ComposeResult:
         yield RichLog(id="output", wrap=True, markup=True, highlight=False)
-        yield Static("", id="streaming")
         yield Static("", id="status")
         yield Input(placeholder="Ask a question… (Tab to switch mode)", id="input")
         yield Footer()
@@ -105,13 +98,9 @@ class PedroApp(App):
             f" mode: [bold]{mode}[/bold]  │  {models}"
         )
 
-    def _set_streaming(self, text: str) -> None:
-        self.query_one("#streaming", Static).update(text)
-
     def action_toggle_mode(self) -> None:
         if self._current_worker and self._current_worker.is_running:
             self._current_worker.cancel()
-            self._set_streaming("")
         log = self.query_one("#output", RichLog)
         idx = _MODES.index(self.mode)
         self.mode = _MODES[(idx + 1) % len(_MODES)]
@@ -153,7 +142,6 @@ class PedroApp(App):
     def action_cancel(self) -> None:
         if self._current_worker and self._current_worker.is_running:
             self._current_worker.cancel()
-            self._set_streaming("")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         question = event.value.strip()
@@ -171,13 +159,18 @@ class PedroApp(App):
 
     def _do_ask(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
-        buf: list[str] = []
+        full_buf: list[str] = []
+        line_buf = ""
 
         def emit(token: str) -> None:
+            nonlocal line_buf
             if get_current_worker().is_cancelled:
                 raise InterruptedError
-            buf.append(token)
-            self.call_from_thread(self._set_streaming, "".join(buf))
+            full_buf.append(token)
+            line_buf += token
+            while "\n" in line_buf:
+                line, line_buf = line_buf.split("\n", 1)
+                self.call_from_thread(log.write, line)
 
         def log_line(msg: str) -> None:
             self.call_from_thread(log.write, msg)
@@ -207,29 +200,33 @@ class PedroApp(App):
                 llm_model=DEEP_MODEL,
                 on_token=emit,
             )
-            answer = "".join(buf)
+            if line_buf:
+                self.call_from_thread(log.write, line_buf)
+            answer = "".join(full_buf)
             self._last_answer = answer
             self._history.append({"mode": self.mode, "question": question, "answer": answer})
             self._history_idx = -1
             self._session_log.append(self.mode, question, answer)
-            self.call_from_thread(self._set_streaming, "")
-            self.call_from_thread(log.write, answer)
         except InterruptedError:
-            self.call_from_thread(self._set_streaming, "")
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
 
     def _do_research(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
-        buf: list[str] = []
+        full_buf: list[str] = []
+        line_buf = ""
 
         def check() -> None:
             if get_current_worker().is_cancelled:
                 raise InterruptedError
 
         def emit(token: str) -> None:
+            nonlocal line_buf
             check()
-            buf.append(token)
-            self.call_from_thread(self._set_streaming, "".join(buf))
+            full_buf.append(token)
+            line_buf += token
+            while "\n" in line_buf:
+                line, line_buf = line_buf.split("\n", 1)
+                self.call_from_thread(log.write, line)
 
         def log_fn(msg: str) -> None:
             self.call_from_thread(log.write, msg)
@@ -253,20 +250,19 @@ class PedroApp(App):
                 on_token=emit,
                 check=check,
             )
-            answer = "".join(buf)
+            if line_buf:
+                self.call_from_thread(log.write, line_buf)
+            answer = "".join(full_buf)
             self._last_answer = answer
             self._history.append({"mode": self.mode, "question": question, "answer": answer})
             self._history_idx = -1
             self._session_log.append(self.mode, question, answer)
-            self.call_from_thread(self._set_streaming, "")
-            self.call_from_thread(log.write, answer)
             if pages_by_file:
                 self.call_from_thread(log.write, "\n[bold]Sources:[/bold]")
                 for filename in sorted(pages_by_file):
                     pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
                     self.call_from_thread(log.write, f"[dim]  {filename} — pages {pages}[/dim]")
         except InterruptedError:
-            self.call_from_thread(self._set_streaming, "")
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
 
 
