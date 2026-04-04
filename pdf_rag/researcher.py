@@ -84,6 +84,17 @@ def synthesize(
         raise
 
 
+def own_take(question: str, base_url: str, model: str) -> str:
+    client = Client(host=base_url)
+    prompt = load_prompt("own_take", question=question)
+    response = client.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        stream=False,
+    )
+    return response["message"]["content"].strip()
+
+
 def translate_question(text: str, lang: str, client: Client, model: str) -> str:
     prompt = load_prompt("translate_question", text=text, lang=lang)
     response = client.chat(

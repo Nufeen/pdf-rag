@@ -21,7 +21,7 @@ from ..config import (
     TRANSLATE_MODEL,
 )
 from ..llm import generate_answer
-from ..researcher import research
+from ..researcher import own_take, research
 from ..retriever import query
 from ..session_log import SessionLog
 from .welcome import write_welcome
@@ -262,6 +262,10 @@ class PedroApp(App):
                 for filename in sorted(pages_by_file):
                     pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
                     self.call_from_thread(log.write, f"[dim]  {filename} — pages {pages}[/dim]")
+            take = own_take(question=question, base_url=OLLAMA_BASE_URL, model=DEEP_MODEL)
+            if take:
+                self.call_from_thread(log.write, f"\n[bold]Model's take[/bold] [dim]({DEEP_MODEL})[/dim][bold]:[/bold]")
+                self.call_from_thread(log.write, f"[dim]{take}[/dim]")
         except InterruptedError:
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
 
