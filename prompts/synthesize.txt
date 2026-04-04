@@ -1,4 +1,5 @@
 Based on the following research findings, provide a comprehensive answer to the original question.
+Use language of provided question for answer.
 Cite sources as [Book: filename, Page: N] where available.
 
 Original question: {question}
