@@ -237,7 +237,8 @@ def research(
             if not chunks:
                 info("(no relevant content found)")
                 continue
-            info(f"retrieved {len(chunks)} chunks — generating partial answer...")
+            sources = sorted({c["source_file"] for c in chunks})
+            info(f"retrieved {len(chunks)} chunks from {len(sources)} source(s): {', '.join(sources)}")
             answer = generate_answer(
                 question=sq,
                 chunks=chunks,
