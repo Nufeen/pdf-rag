@@ -275,6 +275,18 @@ Output:
 The fundamental differences between symbolic and connectionist AI...
 ```
 
+**Pipeline steps:**
+
+| Step | What happens | Model |
+| ---- | ------------ | ----- |
+| Plan | Decomposes the question into N focused sub-questions | `TINY_MODEL` |
+| Execute | For each sub-question: retrieves chunks from vector DB, generates a partial answer | `FAST_MODEL` |
+| Reflect | Evaluates completeness; identifies gaps or follow-up questions. Repeats Execute if needed, up to `--depth` passes | `TINY_MODEL` |
+| Synthesize | Combines all findings into a final answer with citations | `DEEP_MODEL` |
+| Sources | Lists PDF files and page numbers from all retrieved chunks | — |
+| Referenced in chunks | Extracts author names, paper/book titles, URLs mentioned inside the retrieved text | `FAST_MODEL` |
+| Model's take *(TUI only)* | Brief perspective from the model's own training knowledge, independent of the PDFs | `DEEP_MODEL` |
+
 Control depth and breadth:
 
 ```bash
