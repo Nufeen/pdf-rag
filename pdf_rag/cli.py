@@ -111,7 +111,7 @@ def research_cmd(question, db_path, deep_model, fast_model, tiny_model, embed_mo
         COLLECTION_NAME,
         metadata={"hnsw:space": "cosine"},
     )
-    pages_by_file = research(
+    research(
         question=question,
         collection=collection,
         base_url=ollama_url,
@@ -125,11 +125,6 @@ def research_cmd(question, db_path, deep_model, fast_model, tiny_model, embed_mo
         languages=[l.strip() for l in languages.split(",") if l.strip()],
         translate_model=translate_model,
     )
-    if pages_by_file:
-        click.echo(click.style("\n🪅 Sources:", fg="yellow", bold=True))
-        for filename in sorted(pages_by_file):
-            pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
-            click.echo(click.style(f"  {filename} — pages {pages}", fg="bright_black"))
     models_line = deep_model
     if fast_model != deep_model:
         models_line += f"  ·  {fast_model}"

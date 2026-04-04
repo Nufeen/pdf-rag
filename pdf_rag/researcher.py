@@ -237,4 +237,8 @@ def research(
         for chunk in finding["chunks"]:
             pages_by_file.setdefault(chunk["source_file"], set()).add(chunk["page_num"])
 
-    return pages_by_file
+    if pages_by_file:
+        step("Sources:")
+        for filename in sorted(pages_by_file):
+            pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
+            info(f"{filename} — pages {pages}")

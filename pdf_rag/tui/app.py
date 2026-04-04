@@ -233,7 +233,7 @@ class PedroApp(App):
 
         collection = _open_collection()
         try:
-            pages_by_file = research(
+            research(
                 question=question,
                 collection=collection,
                 base_url=OLLAMA_BASE_URL,
@@ -257,11 +257,6 @@ class PedroApp(App):
             self._history.append({"mode": self.mode, "question": question, "answer": answer})
             self._history_idx = -1
             self._session_log.append(self.mode, question, answer)
-            if pages_by_file:
-                self.call_from_thread(log.write, "\n[bold]Sources:[/bold]")
-                for filename in sorted(pages_by_file):
-                    pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
-                    self.call_from_thread(log.write, f"[dim]  {filename} — pages {pages}[/dim]")
             take = own_take(question=question, base_url=OLLAMA_BASE_URL, model=DEEP_MODEL)
             if take:
                 self.call_from_thread(log.write, f"\n[bold]Model's take[/bold] [dim]({DEEP_MODEL})[/dim][bold]:[/bold]")
