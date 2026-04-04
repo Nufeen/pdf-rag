@@ -153,7 +153,9 @@ def research(
     translate_model: str = TRANSLATE_MODEL,
     log_fn: Callable[[str], None] | None = None,
     on_token: Callable[[str], None] | None = None,
+    check: Callable[[], None] | None = None,
 ) -> None:
+    _check = check or (lambda: None)
     step = (lambda msg: log_fn(f"\n🪅 {msg}")) if log_fn else _step
     info = (lambda msg: log_fn(f"  {msg}")) if log_fn else _info
     ok = (lambda msg: log_fn(f"  ✓ {msg}")) if log_fn else _ok
@@ -163,6 +165,7 @@ def research(
     all_findings: list[dict] = []
 
     for iteration in range(depth):
+        _check()
         if iteration == 0:
             step(f"Planning {n_subquestions} sub-questions...")
             subquestions = plan_subquestions(question, n_subquestions, client, tiny_model)
@@ -173,6 +176,7 @@ def research(
             current_answer = synthesize(
                 question, all_findings, client, fast_model, base_url, stream=False
             )
+            _check()
             followups = reflect(question, current_answer, client, tiny_model)
             if followups is None:
                 ok("Answer is sufficient.")
@@ -186,6 +190,7 @@ def research(
 
         step(f"Executing {len(subquestions)} sub-question(s)...")
         for i, sq in enumerate(subquestions, 1):
+            _check()
             subq(i, len(subquestions), sq)
             chunks = retrieve_multilingual(
                 question=sq,
@@ -198,6 +203,7 @@ def research(
                 client=client,
                 log_fn=log_fn,
             )
+            _check()
             if not chunks:
                 info("(no relevant content found)")
                 continue
@@ -209,6 +215,7 @@ def research(
                 llm_model=fast_model,
                 stream=False,
             )
+            _check()
             all_findings.append({"subquestion": sq, "answer": answer, "chunks": chunks})
 
     step("Synthesizing final answer...\n")

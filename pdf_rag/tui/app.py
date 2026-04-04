@@ -109,6 +109,9 @@ class PedroApp(App):
         self.query_one("#streaming", Static).update(text)
 
     def action_toggle_mode(self) -> None:
+        if self._current_worker and self._current_worker.is_running:
+            self._current_worker.cancel()
+            self._set_streaming("")
         log = self.query_one("#output", RichLog)
         idx = _MODES.index(self.mode)
         self.mode = _MODES[(idx + 1) % len(_MODES)]
@@ -151,7 +154,6 @@ class PedroApp(App):
         if self._current_worker and self._current_worker.is_running:
             self._current_worker.cancel()
             self._set_streaming("")
-            self.query_one("#output", RichLog).write("\n[yellow]Cancelled.[/yellow]\n")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         question = event.value.strip()
@@ -214,14 +216,18 @@ class PedroApp(App):
             self.call_from_thread(log.write, answer)
         except InterruptedError:
             self.call_from_thread(self._set_streaming, "")
+            self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
 
     def _do_research(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
         buf: list[str] = []
 
-        def emit(token: str) -> None:
+        def check() -> None:
             if get_current_worker().is_cancelled:
                 raise InterruptedError
+
+        def emit(token: str) -> None:
+            check()
             buf.append(token)
             self.call_from_thread(self._set_streaming, "".join(buf))
 
@@ -245,6 +251,7 @@ class PedroApp(App):
                 translate_model=TRANSLATE_MODEL,
                 log_fn=log_fn,
                 on_token=emit,
+                check=check,
             )
             answer = "".join(buf)
             self._last_answer = answer
@@ -260,6 +267,7 @@ class PedroApp(App):
                     self.call_from_thread(log.write, f"[dim]  {filename} — pages {pages}[/dim]")
         except InterruptedError:
             self.call_from_thread(self._set_streaming, "")
+            self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
 
 
 def _open_collection():
