@@ -416,15 +416,17 @@ All variables can also be passed as CLI flags — run `pedro index --help`, `ped
 
 All prompts live in the `prompts/` folder. Edit any file directly — changes take effect on the next command, no reinstall needed.
 
-| File                             | Used by          | Purpose                                                                                |
-| -------------------------------- | ---------------- | -------------------------------------------------------------------------------------- |
-| `prompts/answer.txt`             | `pedro ask`      | System prompt for answer generation — controls tone, citation format, grounding rules  |
-| `prompts/plan_subquestions.txt`  | `pedro research` | Instructs the model to decompose the question into N sub-questions                     |
-| `prompts/reflect.txt`            | `pedro research` | Asks the model to evaluate completeness and identify gaps in the current answer        |
-| `prompts/synthesize.txt`         | `pedro research` | Instructs the model to combine all research findings into a final answer               |
-| `prompts/translate_question.txt` | `pedro research` | Translates a sub-question into a target language (used when `SEARCH_LANGUAGES` is set) |
+| File                             | Used by                | Model        | Placeholders              | Purpose                                                                                 |
+| -------------------------------- | ---------------------- | ------------ | ------------------------- | --------------------------------------------------------------------------------------- |
+| `prompts/answer.txt`             | `pedro ask`            | `DEEP_MODEL` | `{question}`, `{context}` | System prompt for answer generation — controls tone, citation format, grounding rules   |
+| `prompts/plan_subquestions.txt`  | `pedro research`       | `TINY_MODEL` | `{question}`, `{n}`       | Instructs the model to decompose the question into N sub-questions                      |
+| `prompts/reflect.txt`            | `pedro research`       | `TINY_MODEL` | `{question}`, `{answer}`  | Asks the model to evaluate completeness and identify gaps in the current answer         |
+| `prompts/synthesize.txt`         | `pedro research`       | `DEEP_MODEL` | `{question}`, `{context}` | Instructs the model to combine all research findings into a final answer                |
+| `prompts/extract_citations.txt`  | `pedro research`       | `FAST_MODEL` | `{context}`               | Extracts cited authors, papers, books, and URLs from retrieved chunks                   |
+| `prompts/own_take.txt`           | TUI `research` mode    | `DEEP_MODEL` | `{question}`              | Asks the model for a brief perspective from its own training knowledge                  |
+| `prompts/translate_question.txt` | `pedro research`       | `TINY_MODEL` | `{text}`, `{lang}`        | Translates a sub-question into a target language (used when `SEARCH_LANGUAGES` is set)  |
 
-Prompt files support `{placeholders}` that are filled at runtime (e.g. `{question}`, `{n}`, `{answer}`, `{context}`). Do not remove placeholders — the tool will fail if they are missing.
+Prompt files support `{placeholders}` filled at runtime. Do not remove placeholders — the tool will fail if they are missing.
 
 ## Notes
 
