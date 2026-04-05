@@ -60,6 +60,10 @@ That's it. Re-run `pedro index ~/Books/` whenever you add new PDFs — only new 
 | CLI            | Click + Textual (adr 1 for details) | https://click.palletsprojects.com/en/stable/             |
 | Framework      | None (raw components)               | RAG pipeline is simple; no LlamaIndex/LangChain overhead |
 
+## Testing
+
+See [tests/README.md](tests/README.md) for setup and how to run tests.
+
 ## Project Structure
 
 ```

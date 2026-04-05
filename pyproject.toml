@@ -17,6 +17,9 @@ dependencies = [
 [project.scripts]
 pedro = "pdf_rag.cli:cli"
 
+[project.optional-dependencies]
+dev = ["pytest", "responses"]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
