@@ -199,6 +199,7 @@ def research(
     _check = check or (lambda: None)
     step = (lambda msg: log_fn(f"\n🪅 {msg}")) if log_fn else _step
     info = (lambda msg: log_fn(f"  {msg}")) if log_fn else _info
+    dim  = (lambda msg: log_fn(f"  [dim]{msg}[/dim]")) if log_fn else _info
     ok = (lambda msg: log_fn(f"  ✓ {msg}")) if log_fn else _ok
     subq = (lambda i, total, text: log_fn(f"  [{i}/{total}] {text}")) if log_fn else _subq
 
@@ -252,7 +253,9 @@ def research(
                 info("(no relevant content found)")
                 continue
             sources = sorted({c["source_file"] for c in chunks})
-            info(f"retrieved {len(chunks)} chunks from {len(sources)} source(s): {', '.join(sources)}")
+            info(f"retrieved {len(chunks)} chunks from {len(sources)} source(s):")
+            for i, src in enumerate(sources, 1):
+                dim(f"{i}. {src}")
             answer = generate_answer(
                 question=sq,
                 chunks=chunks,
