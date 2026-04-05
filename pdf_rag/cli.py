@@ -1,8 +1,6 @@
 import click
-import chromadb
 
 from .config import (
-    COLLECTION_NAME,
     DB_PATH,
     DEEP_MODEL,
     EMBED_MODEL,
@@ -16,9 +14,7 @@ from .config import (
     TRANSLATE_MODEL,
 )
 from .indexer import index_folder
-from .llm import generate_answer
-from .researcher import research
-from .retriever import query
+from .researcher import research, run_ask
 
 
 @click.group(invoke_without_command=True)
@@ -57,36 +53,14 @@ def index(folder, db_path, embed_model, ollama_url, force):
 @click.option("--no-sources", is_flag=True, help="Hide retrieved source list")
 def ask(question, db_path, deep_model, embed_model, ollama_url, top_k, no_sources):
     """Ask a QUESTION against the indexed PDF library."""
-    client = chromadb.PersistentClient(path=db_path)
-    collection = client.get_or_create_collection(
-        COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
-    )
-
-    chunks = query(
+    run_ask(
         question=question,
-        collection=collection,
-        embed_model=embed_model,
-        base_url=ollama_url,
-        top_k=top_k,
-    )
-
-    if not chunks:
-        click.echo("No relevant content found. Have you indexed your PDF folder?")
-        return
-
-    if not no_sources:
-        click.echo("\nRetrieved sources:")
-        for c in chunks:
-            click.echo(f"  - {c['source_file']} (page {c['page_num']}, score: {c['score']:.3f})")
-        click.echo()
-
-    click.echo("Answer:\n")
-    generate_answer(
-        question=question,
-        chunks=chunks,
+        db_path=db_path,
         base_url=ollama_url,
         llm_model=deep_model,
+        embed_model=embed_model,
+        top_k=top_k,
+        show_sources=not no_sources,
     )
     click.echo(click.style(f"model: {deep_model}", fg="bright_black"))
 
@@ -106,14 +80,9 @@ def ask(question, db_path, deep_model, embed_model, ollama_url, top_k, no_source
 @click.option("--translate-model", default=TRANSLATE_MODEL, show_default=True, help="Model used for query translation")
 def research_cmd(question, db_path, deep_model, fast_model, tiny_model, embed_model, ollama_url, depth, sub_questions, top_k, languages, translate_model):
     """Deep multi-step research over the indexed PDF library."""
-    client = chromadb.PersistentClient(path=db_path)
-    collection = client.get_or_create_collection(
-        COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
-    )
     research(
         question=question,
-        collection=collection,
+        db_path=db_path,
         base_url=ollama_url,
         llm_model=deep_model,
         fast_model=fast_model,

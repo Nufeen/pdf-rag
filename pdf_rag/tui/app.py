@@ -1,4 +1,3 @@
-import chromadb
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.reactive import reactive
@@ -7,7 +6,6 @@ from textual.worker import Worker, get_current_worker
 
 from ..config import (
     DB_PATH,
-    COLLECTION_NAME,
     EMBED_MODEL,
     FAST_MODEL,
     DEEP_MODEL,
@@ -20,9 +18,7 @@ from ..config import (
     TOP_K,
     TRANSLATE_MODEL,
 )
-from ..llm import generate_answer
-from ..researcher import own_take, research
-from ..retriever import query
+from ..researcher import research, run_ask
 from ..session_log import SessionLog
 from .welcome import write_welcome
 
@@ -159,54 +155,35 @@ class PedroApp(App):
 
     def _do_ask(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
-        full_buf: list[str] = []
         line_buf = ""
 
         def emit(token: str) -> None:
             nonlocal line_buf
             if get_current_worker().is_cancelled:
                 raise InterruptedError
-            full_buf.append(token)
             line_buf += token
             while "\n" in line_buf:
                 line, line_buf = line_buf.split("\n", 1)
                 self.call_from_thread(log.write, line)
 
-        def log_line(msg: str) -> None:
-            self.call_from_thread(log.write, msg)
-
-        collection = _open_collection()
-        chunks = query(
-            question=question,
-            collection=collection,
-            embed_model=EMBED_MODEL,
-            base_url=OLLAMA_BASE_URL,
-            top_k=TOP_K,
-        )
-        if not chunks:
-            log_line("[yellow]No relevant content found. Have you indexed your PDF folder?[/yellow]")
-            return
-
-        log_line("\n[dim]Retrieved sources:[/dim]")
-        for c in chunks:
-            log_line(f"[dim]  - {c['source_file']} (page {c['page_num']}, score: {c['score']:.3f})[/dim]")
-        log_line("")
-
         try:
-            generate_answer(
+            answer = run_ask(
                 question=question,
-                chunks=chunks,
+                db_path=DB_PATH,
                 base_url=OLLAMA_BASE_URL,
                 llm_model=DEEP_MODEL,
+                embed_model=EMBED_MODEL,
+                top_k=TOP_K,
+                log_fn=lambda msg: self.call_from_thread(log.write, msg),
                 on_token=emit,
             )
             if line_buf:
                 self.call_from_thread(log.write, line_buf)
-            answer = "".join(full_buf)
-            self._last_answer = answer
-            self._history.append({"mode": self.mode, "question": question, "answer": answer})
-            self._history_idx = -1
-            self._session_log.append(self.mode, question, answer)
+            if answer:
+                self._last_answer = answer
+                self._history.append({"mode": self.mode, "question": question, "answer": answer})
+                self._history_idx = -1
+                self._session_log.append(self.mode, question, answer)
         except InterruptedError:
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
 
@@ -231,11 +208,10 @@ class PedroApp(App):
         def log_fn(msg: str) -> None:
             self.call_from_thread(log.write, msg)
 
-        collection = _open_collection()
         try:
             research(
                 question=question,
-                collection=collection,
+                db_path=DB_PATH,
                 base_url=OLLAMA_BASE_URL,
                 llm_model=DEEP_MODEL,
                 fast_model=FAST_MODEL,
@@ -257,10 +233,6 @@ class PedroApp(App):
             self._history.append({"mode": self.mode, "question": question, "answer": answer})
             self._history_idx = -1
             self._session_log.append(self.mode, question, answer)
-            take = own_take(question=question, base_url=OLLAMA_BASE_URL, model=DEEP_MODEL)
-            if take:
-                self.call_from_thread(log.write, f"\n[bold]Model's take[/bold] [dim]({DEEP_MODEL})[/dim][bold]:[/bold]")
-                self.call_from_thread(log.write, f"[dim]{take}[/dim]")
         except InterruptedError:
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
 

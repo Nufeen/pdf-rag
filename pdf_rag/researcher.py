@@ -1,10 +1,13 @@
 from collections.abc import Callable
 
+import chromadb
 import click
 from ollama import Client
 from chromadb import Collection
 
 from .config import (
+    COLLECTION_NAME,
+    DB_PATH,
     DEEP_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
@@ -18,6 +21,14 @@ from .config import (
 )
 from .llm import generate_answer, load_prompt
 from .retriever import query
+
+
+def _open_collection(db_path: str = DB_PATH) -> Collection:
+    client = chromadb.PersistentClient(path=db_path)
+    return client.get_or_create_collection(
+        COLLECTION_NAME,
+        metadata={"hnsw:space": "cosine"},
+    )
 
 
 def _parse_questions(text: str) -> list[str]:
@@ -181,7 +192,7 @@ def _ok(msg: str) -> None:
 
 def research(
     question: str,
-    collection: Collection,
+    db_path: str = DB_PATH,
     base_url: str = OLLAMA_BASE_URL,
     llm_model: str = DEEP_MODEL,
     fast_model: str = FAST_MODEL,
@@ -203,6 +214,7 @@ def research(
     ok = (lambda msg: log_fn(f"  ✓ {msg}")) if log_fn else _ok
     subq = (lambda i, total, text: log_fn(f"  [{i}/{total}] {text}")) if log_fn else _subq
 
+    collection = _open_collection(db_path)
     client = Client(host=base_url)
     all_findings: list[dict] = []
 
@@ -289,3 +301,43 @@ def research(
                 line = line.strip()
                 if line:
                     info(line)
+
+    take = own_take(question, base_url, llm_model)
+    if take:
+        step(f"Model's take ({llm_model}):")
+        info(take)
+
+
+def run_ask(
+    question: str,
+    db_path: str = DB_PATH,
+    base_url: str = OLLAMA_BASE_URL,
+    llm_model: str = DEEP_MODEL,
+    embed_model: str = EMBED_MODEL,
+    top_k: int = TOP_K,
+    log_fn: Callable[[str], None] | None = None,
+    on_token: Callable[[str], None] | None = None,
+    show_sources: bool = True,
+) -> str:
+    """Run the ask pipeline. Returns the full answer string, or '' if no chunks found."""
+    _info_fn = (lambda msg: log_fn(f"  {msg}")) if log_fn else _info
+    _step_fn = (lambda msg: log_fn(f"\n🪅 {msg}")) if log_fn else _step
+
+    collection = _open_collection(db_path)
+    chunks = query(question, collection, embed_model, base_url, top_k)
+    if not chunks:
+        _info_fn("No relevant content found. Have you indexed your PDF folder?")
+        return ""
+
+    if show_sources:
+        _step_fn("Sources:")
+        for c in chunks:
+            _info_fn(f"{c['source_file']} (page {c['page_num']}, score: {c['score']:.3f})")
+
+    return generate_answer(
+        question=question,
+        chunks=chunks,
+        base_url=base_url,
+        llm_model=llm_model,
+        on_token=on_token,
+    )
