@@ -32,3 +32,4 @@ SEARCH_LANGUAGES: list[str] = [
     l.strip() for l in os.environ.get("SEARCH_LANGUAGES", "").split(",") if l.strip()
 ]
 TRANSLATE_MODEL: str = os.environ.get("TRANSLATE_MODEL", TINY_MODEL)
+SERVER_URL: str = os.environ.get("PEDRO_SERVER_URL", "")

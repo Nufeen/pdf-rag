@@ -289,7 +289,7 @@ The fundamental differences between symbolic and connectionist AI...
 | Synthesize | Combines all findings into a final answer with citations | `DEEP_MODEL` |
 | Sources | Lists PDF files and page numbers from all retrieved chunks | — |
 | Referenced in chunks | Extracts author names, paper/book titles, URLs mentioned inside the retrieved text | `FAST_MODEL` |
-| Model's take *(TUI only)* | Brief perspective from the model's own training knowledge, independent of the PDFs | `DEEP_MODEL` |
+| Model's take | Brief perspective from the model's own training knowledge, independent of the PDFs | `DEEP_MODEL` |
 
 Control depth and breadth:
 
@@ -380,6 +380,68 @@ During research, translated queries are shown inline in the log:
 
 If you are starting fresh or can afford a re-index, use `bge-m3`. If you have an existing index and want to extend coverage without re-indexing, use `SEARCH_LANGUAGES`.
 
+## Server Mode
+
+Pedro can run as an HTTP server, exposing the `ask` and `research` pipelines as streaming endpoints. This lets the TUI, a web frontend, or any other client connect to a single running instance.
+
+```bash
+pedro serve                        # binds to 127.0.0.1:8000
+pedro serve --host 0.0.0.0 --port 9000
+```
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/ask` | Single-step RAG answer, streamed as SSE |
+| `POST` | `/v1/research` | Multi-step deep research, streamed as SSE |
+
+All request fields are optional — the server falls back to its config defaults.
+
+```bash
+# Smoke test
+curl -N -X POST http://localhost:8000/v1/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is entropy?"}'
+```
+
+### SSE event format
+
+Each response is a stream of Server-Sent Events with two event types:
+
+```
+event: log
+data: {"text": "🪅 Planning sub-questions..."}
+
+event: token
+data: {"text": "The answer is"}
+
+event: done
+data: {}
+```
+
+`log` events carry pipeline status messages (same as what you see in the TUI).  
+`token` events carry individual answer tokens.  
+`done` signals end of stream.
+
+### Connecting the TUI to the server
+
+Set `PEDRO_SERVER_URL` and the TUI will connect to the server instead of running the pipeline in-process:
+
+```bash
+# Terminal 1 — server
+pedro serve
+
+# Terminal 2 — TUI client
+PEDRO_SERVER_URL=http://localhost:8000 pedro
+```
+
+Without `PEDRO_SERVER_URL` the TUI continues to work standalone (no server needed).
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PEDRO_SERVER_URL` | `` (standalone) | If set, TUI connects to this server instead of running locally |
+
 ## Re-indexing Everything
 
 Use `--force` to re-index all files, for example after changing chunk size:
@@ -405,6 +467,7 @@ pedro index ~/Books/ --force
 | `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`                                            |
 | `SEARCH_LANGUAGES`        | `` (disabled)            | Comma-separated languages for query translation in `pedro research` (e.g. `Russian,French`) |
 | `TRANSLATE_MODEL`         | `TINY_MODEL`             | Model used to translate sub-questions when `SEARCH_LANGUAGES` is set                        |
+| `PEDRO_SERVER_URL`        | `` (standalone)          | If set, TUI connects to this server instead of running the pipeline in-process               |
 
 All variables can also be passed as CLI flags — run `pedro index --help`, `pedro ask --help`, or `pedro research --help` for details.
 

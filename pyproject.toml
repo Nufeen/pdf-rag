@@ -12,13 +12,15 @@ dependencies = [
     "requests>=2.31.0",
     "tqdm>=4.66.0",
     "textual>=0.60.0",
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.29.0",
 ]
 
 [project.scripts]
 pedro = "pdf_rag.cli:cli"
 
 [project.optional-dependencies]
-dev = ["pytest", "responses"]
+dev = ["pytest", "responses", "httpx"]
 
 [build-system]
 requires = ["setuptools>=68"]

@@ -12,6 +12,7 @@ from .config import (
     TINY_MODEL,
     TOP_K,
     TRANSLATE_MODEL,
+    SERVER_URL,
 )
 from .indexer import index_folder
 from .researcher import research, run_ask
@@ -100,3 +101,27 @@ def research_cmd(question, db_path, deep_model, fast_model, tiny_model, embed_mo
     if tiny_model != fast_model:
         models_line += f"  ·  {tiny_model}"
     click.echo(click.style(f"models: {models_line}", fg="bright_black"))
+
+
+@cli.command()
+@click.option("--host", default="127.0.0.1", show_default=True, help="Bind host")
+@click.option("--port", default=8000, show_default=True, type=int, help="Bind port")
+def serve(host, port):
+    """Start the pedro HTTP server."""
+    import uvicorn
+    from .server import make_app
+    app = make_app(
+        db_path=DB_PATH,
+        base_url=OLLAMA_BASE_URL,
+        llm_model=DEEP_MODEL,
+        fast_model=FAST_MODEL,
+        tiny_model=TINY_MODEL,
+        embed_model=EMBED_MODEL,
+        depth=RESEARCH_DEPTH,
+        n_subquestions=RESEARCH_N_SUBQUESTIONS,
+        top_k=TOP_K,
+        languages=SEARCH_LANGUAGES,
+        translate_model=TRANSLATE_MODEL,
+    )
+    click.echo(click.style(f"pedro server → http://{host}:{port}", fg="green", bold=True))
+    uvicorn.run(app, host=host, port=port)

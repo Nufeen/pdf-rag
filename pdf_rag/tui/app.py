@@ -14,12 +14,14 @@ from ..config import (
     RESEARCH_N_SUBQUESTIONS,
     SEARCH_LANGUAGES,
     SESSIONS_PATH,
+    SERVER_URL,
     TINY_MODEL,
     TOP_K,
     TRANSLATE_MODEL,
 )
 from ..researcher import research, run_ask
 from ..session_log import SessionLog
+from .stream_client import stream_ask, stream_research
 from .welcome import write_welcome
 
 _MODES = ("ask", "research")
@@ -156,29 +158,49 @@ class PedroApp(App):
     def _do_ask(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
         line_buf = ""
+        full_buf: list[str] = []
 
         def emit(token: str) -> None:
             nonlocal line_buf
             if get_current_worker().is_cancelled:
                 raise InterruptedError
+            full_buf.append(token)
             line_buf += token
             while "\n" in line_buf:
                 line, line_buf = line_buf.split("\n", 1)
                 self.call_from_thread(log.write, line)
 
+        def log_fn(msg: str) -> None:
+            self.call_from_thread(log.write, msg)
+
+        def check() -> None:
+            if get_current_worker().is_cancelled:
+                raise InterruptedError
+
         try:
-            answer = run_ask(
-                question=question,
-                db_path=DB_PATH,
-                base_url=OLLAMA_BASE_URL,
-                llm_model=DEEP_MODEL,
-                embed_model=EMBED_MODEL,
-                top_k=TOP_K,
-                log_fn=lambda msg: self.call_from_thread(log.write, msg),
-                on_token=emit,
-            )
+            if SERVER_URL:
+                stream_ask(
+                    server_url=SERVER_URL,
+                    question=question,
+                    params={"llm_model": DEEP_MODEL, "embed_model": EMBED_MODEL, "top_k": TOP_K},
+                    on_token=emit,
+                    log_fn=log_fn,
+                    check=check,
+                )
+            else:
+                run_ask(
+                    question=question,
+                    db_path=DB_PATH,
+                    base_url=OLLAMA_BASE_URL,
+                    llm_model=DEEP_MODEL,
+                    embed_model=EMBED_MODEL,
+                    top_k=TOP_K,
+                    log_fn=log_fn,
+                    on_token=emit,
+                )
             if line_buf:
                 self.call_from_thread(log.write, line_buf)
+            answer = "".join(full_buf)
             if answer:
                 self._last_answer = answer
                 self._history.append({"mode": self.mode, "question": question, "answer": answer})
@@ -209,23 +231,43 @@ class PedroApp(App):
             self.call_from_thread(log.write, msg)
 
         try:
-            research(
-                question=question,
-                db_path=DB_PATH,
-                base_url=OLLAMA_BASE_URL,
-                llm_model=DEEP_MODEL,
-                fast_model=FAST_MODEL,
-                tiny_model=TINY_MODEL,
-                embed_model=EMBED_MODEL,
-                depth=RESEARCH_DEPTH,
-                n_subquestions=RESEARCH_N_SUBQUESTIONS,
-                top_k=TOP_K,
-                languages=SEARCH_LANGUAGES,
-                translate_model=TRANSLATE_MODEL,
-                log_fn=log_fn,
-                on_token=emit,
-                check=check,
-            )
+            if SERVER_URL:
+                stream_research(
+                    server_url=SERVER_URL,
+                    question=question,
+                    params={
+                        "llm_model": DEEP_MODEL,
+                        "fast_model": FAST_MODEL,
+                        "tiny_model": TINY_MODEL,
+                        "embed_model": EMBED_MODEL,
+                        "depth": RESEARCH_DEPTH,
+                        "n_subquestions": RESEARCH_N_SUBQUESTIONS,
+                        "top_k": TOP_K,
+                        "languages": SEARCH_LANGUAGES,
+                        "translate_model": TRANSLATE_MODEL,
+                    },
+                    on_token=emit,
+                    log_fn=log_fn,
+                    check=check,
+                )
+            else:
+                research(
+                    question=question,
+                    db_path=DB_PATH,
+                    base_url=OLLAMA_BASE_URL,
+                    llm_model=DEEP_MODEL,
+                    fast_model=FAST_MODEL,
+                    tiny_model=TINY_MODEL,
+                    embed_model=EMBED_MODEL,
+                    depth=RESEARCH_DEPTH,
+                    n_subquestions=RESEARCH_N_SUBQUESTIONS,
+                    top_k=TOP_K,
+                    languages=SEARCH_LANGUAGES,
+                    translate_model=TRANSLATE_MODEL,
+                    log_fn=log_fn,
+                    on_token=emit,
+                    check=check,
+                )
             if line_buf:
                 self.call_from_thread(log.write, line_buf)
             answer = "".join(full_buf)
@@ -236,10 +278,3 @@ class PedroApp(App):
         except InterruptedError:
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
 
-
-def _open_collection():
-    client = chromadb.PersistentClient(path=DB_PATH)
-    return client.get_or_create_collection(
-        COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
-    )
