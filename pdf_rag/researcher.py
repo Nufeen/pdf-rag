@@ -333,6 +333,7 @@ def run_ask(
         _step_fn("Sources:")
         for c in chunks:
             _info_fn(f"{c['source_file']} (page {c['page_num']}, score: {c['score']:.3f})")
+        (log_fn or click.echo)("\n")
 
     return generate_answer(
         question=question,
