@@ -20,8 +20,19 @@ from .llm import generate_answer, load_prompt
 from .retriever import query
 
 
-def plan_subquestions(question: str, n: int, client: Client, model: str) -> list[str]:
-    prompt = load_prompt("plan_subquestions", n=str(n), question=question)
+def _parse_questions(text: str) -> list[str]:
+    questions = []
+    for line in text.splitlines():
+        for part in line.split("?"):
+            part = part.strip()
+            if part:
+                questions.append(part + "?")
+    return questions
+
+
+def plan_subquestions(question: str, n: int, client: Client, model: str, covered: list[str] = []) -> list[str]:
+    covered_text = "\n".join(f"- {q}" for q in covered) if covered else "(none)"
+    prompt = load_prompt("plan_subquestions", n=str(n), question=question, covered=covered_text)
     response = client.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
@@ -197,8 +208,11 @@ def research(
     for iteration in range(depth):
         _check()
         if iteration == 0:
-            step(f"Planning {n_subquestions} sub-questions...")
-            subquestions = plan_subquestions(question, n_subquestions, client, tiny_model)
+            user_questions = _parse_questions(question)
+            n_model = max(0, n_subquestions - len(user_questions))
+            step(f"Planning sub-questions (user: {len(user_questions)}, model: {n_model})...")
+            model_questions = plan_subquestions(question, n_model, client, tiny_model, covered=user_questions) if n_model > 0 else []
+            subquestions = user_questions + model_questions
             for i, sq in enumerate(subquestions, 1):
                 info(f"{i}. {sq}")
         else:

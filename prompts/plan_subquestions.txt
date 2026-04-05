@@ -1,5 +1,8 @@
-Generate exactly {n} specific, non-overlapping sub-questions that together would fully answer the following question.
+The following sub-questions are already planned:
+{covered}
 
-Question: {question}
+Generate exactly {n} additional specific, non-overlapping sub-questions that together help answer the original question more fully. Do not repeat or rephrase the already-planned questions.
 
-Output only the sub-questions, one per line, without numbering or bullets.
+Original question: {question}
+
+Output only the new sub-questions, one per line, without numbering or bullets.
