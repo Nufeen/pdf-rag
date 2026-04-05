@@ -6,3 +6,4 @@ Current answer:
 Is this answer complete and well-supported?
 If yes, reply with exactly: SUFFICIENT
 If no, list the specific gaps or missing aspects as sub-questions, one per line.
+Think and write the follow-up sub-questions in the language of the original question.

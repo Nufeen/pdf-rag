@@ -1,5 +1,6 @@
 You are answering from your own training knowledge, not from any documents.
 
 Give a brief perspective on the following topic in 2–4 sentences. Focus on what you know with confidence. If your knowledge of this topic is insufficient or uncertain, return an empty string and nothing else — do not apologize or explain.
+Think and respond in the language of the question.
 
 Topic: {question}

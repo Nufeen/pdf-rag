@@ -2,6 +2,7 @@ From the following text excerpts, extract all citations, references, and mention
 
 Return a plain list, one item per line, no extra commentary.
 If nothing is found, return an empty string and nothing else.
+Think and respond in the language of the research topic.
 
 Excerpts:
 {context}
