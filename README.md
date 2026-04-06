@@ -393,16 +393,51 @@ pedro serve --host 0.0.0.0 --port 9000
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/v1/ask` | Single-step RAG answer, streamed as SSE |
-| `POST` | `/v1/research` | Multi-step deep research, streamed as SSE |
+| `GET`  | `/v1/models` | List available models (OpenAI-compatible) |
+| `POST` | `/v1/chat/completions` | OpenAI-compatible chat endpoint |
+| `POST` | `/v1/ask` | Pedro-native ask, streamed as SSE |
+| `POST` | `/v1/research` | Pedro-native research, streamed as SSE |
 
 All request fields are optional — the server falls back to its config defaults.
 
 ```bash
-# Smoke test
+# Pedro-native smoke test
 curl -N -X POST http://localhost:8000/v1/ask \
   -H "Content-Type: application/json" \
   -d '{"question": "What is entropy?"}'
+
+# OpenAI-compatible (works with any OpenAI client)
+curl -N -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "pedro-ask", "messages": [{"role": "user", "content": "What is entropy?"}], "stream": true}'
+```
+
+### OpenAI-compatible usage
+
+The `/v1/chat/completions` endpoint works with any OpenAI-compatible client. Use `model: "pedro-ask"` or `model: "pedro-research"`.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="pedro")
+
+# Streaming ask
+stream = client.chat.completions.create(
+    model="pedro-ask",
+    messages=[{"role": "user", "content": "What is backpropagation?"}],
+    stream=True,
+)
+for chunk in stream:
+    print(chunk.choices[0].delta.content or "", end="", flush=True)
+
+# Research with extra params
+response = client.chat.completions.create(
+    model="pedro-research",
+    messages=[{"role": "user", "content": "Compare LSTM and Transformer"}],
+    stream=False,
+    extra_body={"depth": 2, "n_subquestions": 3},
+)
+print(response.choices[0].message.content)
 ```
 
 ### SSE event format
