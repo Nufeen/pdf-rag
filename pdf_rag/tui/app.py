@@ -180,11 +180,14 @@ class PedroApp(App):
         if not question:
             return
         event.input.clear()
-        if question == "/copy":
-            self.action_copy_answer()
-            return
-        if question == "/pdf":
-            self._action_export_pdf()
+        if question.startswith("/"):
+            if question == "/copy":
+                self.action_copy_answer()
+            elif question == "/pdf":
+                self._action_export_pdf()
+            else:
+                log = self.query_one("#output", RichLog)
+                log.write(f"\n[red]Command not found: {question}[/red]\n")
             return
         event.input.disabled = True
         log = self.query_one("#output", RichLog)
