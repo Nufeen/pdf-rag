@@ -150,6 +150,11 @@ class PedroApp(App):
         if self.top_k > 1:
             self.top_k -= 1
 
+    def _reenable_input(self) -> None:
+        inp = self.query_one(Input)
+        inp.disabled = False
+        inp.focus()
+
     def action_cancel(self) -> None:
         if self._current_worker and self._current_worker.is_running:
             self._current_worker.cancel()
@@ -159,6 +164,7 @@ class PedroApp(App):
         if not question:
             return
         event.input.clear()
+        event.input.disabled = True
         log = self.query_one("#output", RichLog)
         log.write(f"\n[bold cyan]>[/bold cyan] {question}\n")
         if self.mode == "ask":
@@ -221,6 +227,8 @@ class PedroApp(App):
                 self._session_log.append(self.mode, question, answer)
         except InterruptedError:
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
+        finally:
+            self.call_from_thread(self._reenable_input)
 
     def _do_research(self, question: str) -> None:
         log = self.query_one("#output", RichLog)
@@ -290,4 +298,6 @@ class PedroApp(App):
             self._session_log.append(self.mode, question, answer)
         except InterruptedError:
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
+        finally:
+            self.call_from_thread(self._reenable_input)
 
