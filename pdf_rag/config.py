@@ -33,3 +33,6 @@ SEARCH_LANGUAGES: list[str] = [
 ]
 TRANSLATE_MODEL: str = os.environ.get("TRANSLATE_MODEL", TINY_MODEL)
 SERVER_URL: str = os.environ.get("PEDRO_SERVER_URL", "")
+PDF_EXPORT_PATH: str = os.path.expanduser(
+    os.environ.get("PEDRO_PDF_PATH", "~/.pedro/exports")
+)

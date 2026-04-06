@@ -10,6 +10,7 @@ from ..config import (
     FAST_MODEL,
     DEEP_MODEL,
     OLLAMA_BASE_URL,
+    PDF_EXPORT_PATH,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
     SEARCH_LANGUAGES,
@@ -21,6 +22,7 @@ from ..config import (
 )
 from ..researcher import research, run_ask
 from ..session_log import SessionLog
+from .pdf_export import export_to_pdf
 from .stream_client import stream_ask, stream_research
 from .welcome import write_welcome
 
@@ -143,6 +145,20 @@ class PedroApp(App):
         self.copy_to_clipboard("\n\n".join(parts))
         self.notify(f"Session copied ({len(self._history)} answer(s))")
 
+    def _action_export_pdf(self) -> None:
+        if not self._last_answer:
+            self.notify("No answer to export yet", severity="warning")
+            return
+        try:
+            path = export_to_pdf(
+                self._history[-1]["question"] if self._history else "",
+                self._last_answer,
+                PDF_EXPORT_PATH,
+            )
+            self.notify(f"Saved to {path}")
+        except Exception as exc:
+            self.notify(f"PDF export failed: {exc}", severity="error")
+
     def action_top_k_up(self) -> None:
         self.top_k += 1
 
@@ -166,6 +182,9 @@ class PedroApp(App):
         event.input.clear()
         if question == "/copy":
             self.action_copy_answer()
+            return
+        if question == "/pdf":
+            self._action_export_pdf()
             return
         event.input.disabled = True
         log = self.query_one("#output", RichLog)

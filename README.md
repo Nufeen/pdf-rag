@@ -388,6 +388,27 @@ During research, translated queries are shown inline in the log:
 
 If you are starting fresh or can afford a re-index, use `bge-m3`. If you have an existing index and want to extend coverage without re-indexing, use `SEARCH_LANGUAGES`.
 
+## PDF Export
+
+In TUI mode, type `/pdf` and press Enter to export the last answer to a PDF file.
+
+```
+> /pdf
+✓ Saved to /Users/you/.pedro/exports/pedro_20260406_143022.pdf
+```
+
+The output directory is configurable via env var:
+
+```bash
+export PEDRO_PDF_PATH=~/Documents/pedro-exports
+```
+
+| Variable          | Default              | Description                  |
+|-------------------|----------------------|------------------------------|
+| `PEDRO_PDF_PATH`  | `~/.pedro/exports`   | Directory for exported PDFs  |
+
+Files are named `pedro_<timestamp>.pdf` and contain the question and the full answer text. The directory is created automatically if it doesn't exist.
+
 ## Server Mode
 
 Pedro can run as an HTTP server with SSE streaming and OpenAI-compatible endpoints.
@@ -429,6 +450,7 @@ pedro index ~/Books/ --force
 | `SEARCH_LANGUAGES`        | `` (disabled)            | Comma-separated languages for query translation in `pedro research` (e.g. `Russian,French`) |
 | `TRANSLATE_MODEL`         | `TINY_MODEL`             | Model used to translate sub-questions when `SEARCH_LANGUAGES` is set                        |
 | `PEDRO_SERVER_URL`        | `` (standalone)          | If set, TUI connects to this server instead of running the pipeline in-process               |
+| `PEDRO_PDF_PATH`          | `~/.pedro/exports`       | Directory where `/pdf` TUI command writes exported PDF files                                 |
 
 All variables can also be passed as CLI flags — run `pedro index --help`, `pedro ask --help`, or `pedro research --help` for details.
 
