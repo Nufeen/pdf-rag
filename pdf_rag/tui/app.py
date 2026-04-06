@@ -164,6 +164,9 @@ class PedroApp(App):
         if not question:
             return
         event.input.clear()
+        if question == "/copy":
+            self.action_copy_answer()
+            return
         event.input.disabled = True
         log = self.query_one("#output", RichLog)
         log.write(f"\n[bold cyan]>[/bold cyan] {question}\n")
