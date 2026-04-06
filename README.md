@@ -69,16 +69,24 @@ See [tests/README.md](tests/README.md) for setup and how to run tests.
 ```
 pdf-rag/
 ├── pdf_rag/
-│   ├── __init__.py
-│   ├── cli.py          # Click entry point: `index` and `ask` commands
-│   ├── config.py       # Constants + env var overrides
-│   ├── chunker.py      # Recursive text splitter
-│   ├── indexer.py      # PDF extraction, chunking, embedding, ChromaDB writes
-│   ├── retriever.py    # Query embedding + ChromaDB search
-│   └── llm.py          # Prompt construction + Ollama streaming chat
-├── requirements.txt
-├── pyproject.toml      # entry_points: `pdf-rag = pdf_rag.cli:cli`
-└── README.md           # setup, usage, reindexing workflow, env vars
+│   ├── cli.py              # Click entry point — all commands
+│   ├── config.py           # Constants + env var overrides
+│   ├── researcher.py       # Pipeline logic: run_ask(), research()
+│   ├── chunker.py          # Recursive text splitter
+│   ├── indexer.py          # PDF extraction, chunking, embedding, ChromaDB writes
+│   ├── retriever.py        # Query embedding + ChromaDB search
+│   ├── llm.py              # Prompt loading + Ollama streaming chat
+│   ├── session_log.py      # JSONL session logging
+│   ├── tui/                # Textual TUI app
+│   │   ├── app.py          # PedroApp — layout, bindings, worker dispatch
+│   │   └── stream_client.py # SSE client for server mode
+│   └── server/             # FastAPI HTTP server
+│       ├── app.py          # make_app() factory, /v1/* endpoints
+│       └── README.md       # Server docs, SSE format, OpenAI usage
+├── prompts/                # Prompt templates (editable, no reinstall needed)
+├── tests/                  # pytest suite (30 tests)
+├── adr/                    # Architecture Decision Records
+└── pyproject.toml
 ```
 
 ChromaDB is stored at `~/.pdf-rag/chroma_db` by default (overridable via `--db-path` or `DB_PATH` env var).
@@ -382,96 +390,14 @@ If you are starting fresh or can afford a re-index, use `bge-m3`. If you have an
 
 ## Server Mode
 
-Pedro can run as an HTTP server, exposing the `ask` and `research` pipelines as streaming endpoints. This lets the TUI, a web frontend, or any other client connect to a single running instance.
+Pedro can run as an HTTP server with SSE streaming and OpenAI-compatible endpoints.
 
 ```bash
 pedro serve                        # binds to 127.0.0.1:8000
 pedro serve --host 0.0.0.0 --port 9000
 ```
 
-### Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET`  | `/v1/models` | List available models (OpenAI-compatible) |
-| `POST` | `/v1/chat/completions` | OpenAI-compatible chat endpoint |
-| `POST` | `/v1/ask` | Pedro-native ask, streamed as SSE |
-| `POST` | `/v1/research` | Pedro-native research, streamed as SSE |
-
-All request fields are optional — the server falls back to its config defaults.
-
-```bash
-# Pedro-native smoke test
-curl -N -X POST http://localhost:8000/v1/ask \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What is entropy?"}'
-
-# OpenAI-compatible (works with any OpenAI client)
-curl -N -X POST http://localhost:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"model": "pedro-ask", "messages": [{"role": "user", "content": "What is entropy?"}], "stream": true}'
-```
-
-### OpenAI-compatible usage
-
-The `/v1/chat/completions` endpoint works with any OpenAI-compatible client. Use `model: "pedro-ask"` or `model: "pedro-research"`.
-
-```python
-from openai import OpenAI
-
-client = OpenAI(base_url="http://localhost:8000/v1", api_key="pedro")
-
-# Streaming ask
-stream = client.chat.completions.create(
-    model="pedro-ask",
-    messages=[{"role": "user", "content": "What is backpropagation?"}],
-    stream=True,
-)
-for chunk in stream:
-    print(chunk.choices[0].delta.content or "", end="", flush=True)
-
-# Research with extra params
-response = client.chat.completions.create(
-    model="pedro-research",
-    messages=[{"role": "user", "content": "Compare LSTM and Transformer"}],
-    stream=False,
-    extra_body={"depth": 2, "n_subquestions": 3},
-)
-print(response.choices[0].message.content)
-```
-
-### SSE event format
-
-Each response is a stream of Server-Sent Events with two event types:
-
-```
-event: log
-data: {"text": "🪅 Planning sub-questions..."}
-
-event: token
-data: {"text": "The answer is"}
-
-event: done
-data: {}
-```
-
-`log` events carry pipeline status messages (same as what you see in the TUI).  
-`token` events carry individual answer tokens.  
-`done` signals end of stream.
-
-### Connecting the TUI to the server
-
-Set `PEDRO_SERVER_URL` and the TUI will connect to the server instead of running the pipeline in-process:
-
-```bash
-# Terminal 1 — server
-pedro serve
-
-# Terminal 2 — TUI client
-PEDRO_SERVER_URL=http://localhost:8000 pedro
-```
-
-Without `PEDRO_SERVER_URL` the TUI continues to work standalone (no server needed).
+See **[pdf_rag/server/README.md](pdf_rag/server/README.md)** for endpoints, SSE format, OpenAI usage, and how to connect the TUI to the server.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
