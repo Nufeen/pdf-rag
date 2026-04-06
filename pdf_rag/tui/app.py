@@ -61,9 +61,12 @@ class PedroApp(App):
         Binding("ctrl+y", "copy_answer", "Copy answer", show=True),
         Binding("ctrl+a", "copy_session", "Copy session", show=True),
         Binding("ctrl+c", "quit", "Quit", show=True),
+        Binding("shift+up", "top_k_up", "top_k +1", show=True, priority=True),
+        Binding("shift+down", "top_k_down", "top_k -1", show=True, priority=True),
     ]
 
     mode: reactive[str] = reactive("ask")
+    top_k: reactive[int] = reactive(TOP_K)
     _current_worker: Worker | None = None
     _last_answer: str = ""
     _history: list[dict] = []
@@ -86,6 +89,9 @@ class PedroApp(App):
     def watch_mode(self, _mode: str) -> None:
         self._update_status()
 
+    def watch_top_k(self, _: int) -> None:
+        self._update_status()
+
     def _update_status(self) -> None:
         mode = self.mode
         if mode == "ask":
@@ -93,7 +99,7 @@ class PedroApp(App):
         else:
             models = f"deep: [dim]{DEEP_MODEL}[/dim]  fast: [dim]{FAST_MODEL}[/dim]  tiny: [dim]{TINY_MODEL}[/dim]"
         self.query_one("#status", Static).update(
-            f" mode: [bold]{mode}[/bold]  │  {models}"
+            f" mode: [bold]{mode}[/bold]  │  {models}  │  top_k: [dim]{self.top_k}[/dim]"
         )
 
     def action_toggle_mode(self) -> None:
@@ -136,6 +142,13 @@ class PedroApp(App):
         parts = [f"[{e['mode']}] {e['question']}\n{e['answer']}" for e in self._history]
         self.copy_to_clipboard("\n\n".join(parts))
         self.notify(f"Session copied ({len(self._history)} answer(s))")
+
+    def action_top_k_up(self) -> None:
+        self.top_k += 1
+
+    def action_top_k_down(self) -> None:
+        if self.top_k > 1:
+            self.top_k -= 1
 
     def action_cancel(self) -> None:
         if self._current_worker and self._current_worker.is_running:
@@ -182,7 +195,7 @@ class PedroApp(App):
                 stream_ask(
                     server_url=SERVER_URL,
                     question=question,
-                    params={"llm_model": DEEP_MODEL, "embed_model": EMBED_MODEL, "top_k": TOP_K},
+                    params={"llm_model": DEEP_MODEL, "embed_model": EMBED_MODEL, "top_k": self.top_k},
                     on_token=emit,
                     log_fn=log_fn,
                     check=check,
@@ -194,7 +207,7 @@ class PedroApp(App):
                     base_url=OLLAMA_BASE_URL,
                     llm_model=DEEP_MODEL,
                     embed_model=EMBED_MODEL,
-                    top_k=TOP_K,
+                    top_k=self.top_k,
                     log_fn=log_fn,
                     on_token=emit,
                 )
@@ -242,7 +255,7 @@ class PedroApp(App):
                         "embed_model": EMBED_MODEL,
                         "depth": RESEARCH_DEPTH,
                         "n_subquestions": RESEARCH_N_SUBQUESTIONS,
-                        "top_k": TOP_K,
+                        "top_k": self.top_k,
                         "languages": SEARCH_LANGUAGES,
                         "translate_model": TRANSLATE_MODEL,
                     },
@@ -261,7 +274,7 @@ class PedroApp(App):
                     embed_model=EMBED_MODEL,
                     depth=RESEARCH_DEPTH,
                     n_subquestions=RESEARCH_N_SUBQUESTIONS,
-                    top_k=TOP_K,
+                    top_k=self.top_k,
                     languages=SEARCH_LANGUAGES,
                     translate_model=TRANSLATE_MODEL,
                     log_fn=log_fn,
