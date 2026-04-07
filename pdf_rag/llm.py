@@ -8,22 +8,15 @@ from .config import LLM_MODEL, OLLAMA_BASE_URL
 
 _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
-_ANSWER_FALLBACK = (
-    "You are a research assistant. Answer the user's question using ONLY the provided context "
-    "excerpts from PDF books. For each statement you make, cite the source as "
-    "[Book: <filename>, Page: <page_num>]. If the context does not contain enough information "
-    "to answer the question, say so explicitly. Do not use any knowledge outside the provided excerpts."
-)
 
-
-def load_prompt(name: str, fallback: str = "", **kwargs: str) -> str:
+def load_prompt(name: str, **kwargs: str) -> str:
     path = _PROMPTS_DIR / f"{name}.txt"
-    template = path.read_text().strip() if path.exists() else fallback
+    template = path.read_text().strip()
     return template.format(**kwargs) if kwargs else template
 
 
 def _load_system_prompt() -> str:
-    return load_prompt("answer", fallback=_ANSWER_FALLBACK)
+    return load_prompt("answer")
 
 
 def build_context(chunks: list[dict]) -> str:
