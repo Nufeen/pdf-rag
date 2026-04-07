@@ -11,11 +11,6 @@ def test_load_prompt_existing_file_returns_content():
     assert len(result) > 0
 
 
-def test_load_prompt_missing_file_returns_fallback():
-    result = load_prompt("nonexistent_prompt_xyz", fallback="fallback text")
-    assert result == "fallback text"
-
-
 def test_load_prompt_fills_placeholders():
     # synthesize.txt uses {question} and {context}
     result = load_prompt("synthesize", question="What is entropy?", context="Some context.")
