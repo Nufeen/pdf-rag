@@ -66,3 +66,23 @@ pedro research "what is entropy?" \
   --fast-model mistral:7b \
   --tiny-model qwen2.5:3b
 ```
+
+## Revision: Reduced to Two Tiers
+
+The three-tier split was later found to be unnecessary complexity. `TINY_MODEL`
+and `FAST_MODEL` handled structurally different tasks (orchestration vs. partial
+synthesis) but in practice the same model fits both roles well. Having a third
+env var and CLI flag added cognitive overhead without measurable benefit.
+
+**Change:** `TINY_MODEL` was removed. Its tasks (plan_subquestions, reflect,
+translate_question) now use `FAST_MODEL`. `DEEP_MODEL` was renamed to `LLM_MODEL`
+to be more descriptive and less tied to the tier hierarchy.
+
+Current model configuration:
+
+| Env var       | Default       | Used for |
+|---------------|---------------|----------|
+| `LLM_MODEL`   | `mistral:7b`  | `ask`, final synthesis, model's take |
+| `FAST_MODEL`  | `LLM_MODEL`   | sub-question answers, planning, reflection, citations, translation |
+
+CLI flags: `--model`, `--fast-model`

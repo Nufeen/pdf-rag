@@ -8,14 +8,13 @@ from chromadb import Collection
 from .config import (
     COLLECTION_NAME,
     DB_PATH,
-    DEEP_MODEL,
+    LLM_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
     SEARCH_LANGUAGES,
-    TINY_MODEL,
     TOP_K,
     TRANSLATE_MODEL,
 )
@@ -194,9 +193,8 @@ def research(
     question: str,
     db_path: str = DB_PATH,
     base_url: str = OLLAMA_BASE_URL,
-    llm_model: str = DEEP_MODEL,
+    llm_model: str = LLM_MODEL,
     fast_model: str = FAST_MODEL,
-    tiny_model: str = TINY_MODEL,
     embed_model: str = EMBED_MODEL,
     depth: int = RESEARCH_DEPTH,
     n_subquestions: int = RESEARCH_N_SUBQUESTIONS,
@@ -224,7 +222,7 @@ def research(
             user_questions = _parse_questions(question)
             n_model = max(0, n_subquestions - len(user_questions))
             step(f"Planning sub-questions (user: {len(user_questions)}, model: {n_model})...")
-            model_questions = plan_subquestions(question, n_model, client, tiny_model, covered=user_questions) if n_model > 0 else []
+            model_questions = plan_subquestions(question, n_model, client, fast_model, covered=user_questions) if n_model > 0 else []
             subquestions = user_questions + model_questions
             for i, sq in enumerate(subquestions, 1):
                 info(f"{i}. {sq}")
@@ -234,7 +232,7 @@ def research(
                 question, all_findings, client, fast_model, base_url, stream=False
             )
             _check()
-            followups = reflect(question, current_answer, client, tiny_model)
+            followups = reflect(question, current_answer, client, fast_model)
             if followups is None:
                 ok("Answer is sufficient.")
                 step("Final answer:\n")
@@ -312,7 +310,7 @@ def run_ask(
     question: str,
     db_path: str = DB_PATH,
     base_url: str = OLLAMA_BASE_URL,
-    llm_model: str = DEEP_MODEL,
+    llm_model: str = LLM_MODEL,
     embed_model: str = EMBED_MODEL,
     top_k: int = TOP_K,
     log_fn: Callable[[str], None] | None = None,

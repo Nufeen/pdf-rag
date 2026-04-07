@@ -252,11 +252,11 @@ pedro ask "Compare LSTM and GRU" --top-k 8
 Override model or embedding per-run:
 
 ```bash
-pedro ask "What is entropy?" --deep-model llama3.1:70b
+pedro ask "What is entropy?" --model llama3.1:70b
 pedro ask "What is entropy?" --embed-model bge-m3 --top-k 8
 ```
 
-Available flags: `--deep-model`, `--embed-model`, `--ollama-url`, `--top-k`, `--no-sources`, `--db-path`
+Available flags: `--model`, `--embed-model`, `--ollama-url`, `--top-k`, `--no-sources`, `--db-path`
 
 ## 🧠 Deep Research
 
@@ -291,13 +291,13 @@ The fundamental differences between symbolic and connectionist AI...
 
 | Step | What happens | Model |
 | ---- | ------------ | ----- |
-| Plan | Decomposes the question into N focused sub-questions | `TINY_MODEL` |
+| Plan | Decomposes the question into N focused sub-questions | `FAST_MODEL` |
 | Execute | For each sub-question: retrieves chunks from vector DB, generates a partial answer | `FAST_MODEL` |
-| Reflect | Evaluates completeness; identifies gaps or follow-up questions. Repeats Execute if needed, up to `--depth` passes | `TINY_MODEL` |
-| Synthesize | Combines all findings into a final answer with citations | `DEEP_MODEL` |
+| Reflect | Evaluates completeness; identifies gaps or follow-up questions. Repeats Execute if needed, up to `--depth` passes | `FAST_MODEL` |
+| Synthesize | Combines all findings into a final answer with citations | `LLM_MODEL` |
 | Sources | Lists PDF files and page numbers from all retrieved chunks | — |
 | Referenced in chunks | Extracts author names, paper/book titles, URLs mentioned inside the retrieved text | `FAST_MODEL` |
-| Model's take | Brief perspective from the model's own training knowledge, independent of the PDFs | `DEEP_MODEL` |
+| Model's take | Brief perspective from the model's own training knowledge, independent of the PDFs | `LLM_MODEL` |
 
 Control depth and breadth:
 
@@ -309,10 +309,10 @@ pedro research "Compare LSTM, GRU and Transformer" --depth 3 --sub-questions 5
 Override models per-run:
 
 ```bash
-pedro research "..." --deep-model llama3.1:70b --fast-model mistral:7b --tiny-model qwen2.5:3b
+pedro research "..." --model llama3.1:70b --fast-model mistral:7b
 ```
 
-Available flags: `--deep-model`, `--fast-model`, `--tiny-model`, `--embed-model`, `--ollama-url`, `--depth`, `--sub-questions`, `--top-k`, `--languages`, `--translate-model`, `--db-path`
+Available flags: `--model`, `--fast-model`, `--embed-model`, `--ollama-url`, `--depth`, `--sub-questions`, `--top-k`, `--languages`, `--translate-model`, `--db-path`
 
 Configure via `.env`:
 
@@ -351,7 +351,7 @@ If you want to keep the existing index, enable query translation. For each sub-q
 ```bash
 # In .env
 SEARCH_LANGUAGES=Russian,French
-TRANSLATE_MODEL=qwen2.5:3b   # any small model works; defaults to TINY_MODEL
+TRANSLATE_MODEL=qwen2.5:3b   # any small model works; defaults to FAST_MODEL
 ```
 
 Or pass per-run via CLI:
@@ -439,16 +439,15 @@ pedro index ~/Books/ --force
 | `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                                                             |
 | `DB_PATH`                 | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                                                       |
 | `EMBED_MODEL`             | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`)                                      |
-| `DEEP_MODEL`              | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`)              |
-| `FAST_MODEL`              | `DEEP_MODEL`             | Medium model — per-sub-question answers and intermediate synthesis                          |
-| `TINY_MODEL`              | `FAST_MODEL`             | Fast model — planning and reflection (3B recommended, e.g. `qwen2.5:3b`)                    |
+| `LLM_MODEL`               | `mistral:7b`             | Quality model — `ask` and final research synthesis (recommend `command-r:35b`)              |
+| `FAST_MODEL`              | `LLM_MODEL`              | Intermediate model — sub-questions, planning, reflection (3B–7B recommended)                |
 | `CHUNK_SIZE`              | `800`                    | Characters per chunk                                                                        |
 | `CHUNK_OVERLAP`           | `150`                    | Overlap between chunks                                                                      |
 | `TOP_K`                   | `5`                      | Chunks retrieved per query                                                                  |
 | `RESEARCH_DEPTH`          | `2`                      | Max reflection iterations for `pedro research`                                              |
 | `RESEARCH_N_SUBQUESTIONS` | `3`                      | Sub-questions per iteration for `pedro research`                                            |
 | `SEARCH_LANGUAGES`        | `` (disabled)            | Comma-separated languages for query translation in `pedro research` (e.g. `Russian,French`) |
-| `TRANSLATE_MODEL`         | `TINY_MODEL`             | Model used to translate sub-questions when `SEARCH_LANGUAGES` is set                        |
+| `TRANSLATE_MODEL`         | `FAST_MODEL`             | Model used to translate sub-questions when `SEARCH_LANGUAGES` is set                        |
 | `PEDRO_SERVER_URL`        | `` (standalone)          | If set, TUI connects to this server instead of running the pipeline in-process               |
 | `PEDRO_PDF_PATH`          | `~/.pedro/exports`       | Directory where `/pdf` TUI command writes exported PDF files                                 |
 
@@ -468,13 +467,13 @@ All prompts live in the `prompts/` folder. Edit any file directly — changes ta
 
 | File                             | Used by                | Model        | Placeholders              | Purpose                                                                                 |
 | -------------------------------- | ---------------------- | ------------ | ------------------------- | --------------------------------------------------------------------------------------- |
-| `prompts/answer.txt`             | `pedro ask`            | `DEEP_MODEL` | `{question}`, `{context}` | System prompt for answer generation — controls tone, citation format, grounding rules   |
-| `prompts/plan_subquestions.txt`  | `pedro research`       | `TINY_MODEL` | `{question}`, `{n}`       | Instructs the model to decompose the question into N sub-questions                      |
-| `prompts/reflect.txt`            | `pedro research`       | `TINY_MODEL` | `{question}`, `{answer}`  | Asks the model to evaluate completeness and identify gaps in the current answer         |
-| `prompts/synthesize.txt`         | `pedro research`       | `DEEP_MODEL` | `{question}`, `{context}` | Instructs the model to combine all research findings into a final answer                |
+| `prompts/answer.txt`             | `pedro ask`            | `LLM_MODEL`  | `{question}`, `{context}` | System prompt for answer generation — controls tone, citation format, grounding rules   |
+| `prompts/plan_subquestions.txt`  | `pedro research`       | `FAST_MODEL` | `{question}`, `{n}`       | Instructs the model to decompose the question into N sub-questions                      |
+| `prompts/reflect.txt`            | `pedro research`       | `FAST_MODEL` | `{question}`, `{answer}`  | Asks the model to evaluate completeness and identify gaps in the current answer         |
+| `prompts/synthesize.txt`         | `pedro research`       | `LLM_MODEL`  | `{question}`, `{context}` | Instructs the model to combine all research findings into a final answer                |
 | `prompts/extract_citations.txt`  | `pedro research`       | `FAST_MODEL` | `{context}`               | Extracts cited authors, papers, books, and URLs from retrieved chunks                   |
-| `prompts/own_take.txt`           | TUI `research` mode    | `DEEP_MODEL` | `{question}`              | Asks the model for a brief perspective from its own training knowledge                  |
-| `prompts/translate_question.txt` | `pedro research`       | `TINY_MODEL` | `{text}`, `{lang}`        | Translates a sub-question into a target language (used when `SEARCH_LANGUAGES` is set)  |
+| `prompts/own_take.txt`           | TUI `research` mode    | `LLM_MODEL`  | `{question}`              | Asks the model for a brief perspective from its own training knowledge                  |
+| `prompts/translate_question.txt` | `pedro research`       | `FAST_MODEL` | `{text}`, `{lang}`        | Translates a sub-question into a target language (used when `SEARCH_LANGUAGES` is set)  |
 
 Prompt files support `{placeholders}` filled at runtime. Do not remove placeholders — the tool will fail if they are missing.
 

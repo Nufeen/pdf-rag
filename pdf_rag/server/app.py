@@ -14,14 +14,13 @@ from pydantic import BaseModel
 
 from ..config import (
     DB_PATH,
-    DEEP_MODEL,
+    LLM_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
     SEARCH_LANGUAGES,
-    TINY_MODEL,
     TOP_K,
     TRANSLATE_MODEL,
 )
@@ -42,7 +41,6 @@ class ResearchRequest(BaseModel):
     question: str
     llm_model: Optional[str] = None
     fast_model: Optional[str] = None
-    tiny_model: Optional[str] = None
     embed_model: Optional[str] = None
     depth: Optional[int] = None
     n_subquestions: Optional[int] = None
@@ -66,7 +64,6 @@ class ChatCompletionRequest(BaseModel):
     n_subquestions: Optional[int] = None
     llm_model: Optional[str] = None
     fast_model: Optional[str] = None
-    tiny_model: Optional[str] = None
     embed_model: Optional[str] = None
     languages: Optional[list[str]] = None
     translate_model: Optional[str] = None
@@ -100,9 +97,8 @@ def _oai_stop(cid: str, created: int, model: str) -> str:
 def make_app(
     db_path: str = DB_PATH,
     base_url: str = OLLAMA_BASE_URL,
-    llm_model: str = DEEP_MODEL,
+    llm_model: str = LLM_MODEL,
     fast_model: str = FAST_MODEL,
-    tiny_model: str = TINY_MODEL,
     embed_model: str = EMBED_MODEL,
     depth: int = RESEARCH_DEPTH,
     n_subquestions: int = RESEARCH_N_SUBQUESTIONS,
@@ -179,7 +175,6 @@ def make_app(
                 base_url=base_url,
                 llm_model=req.llm_model or llm_model,
                 fast_model=req.fast_model or fast_model,
-                tiny_model=req.tiny_model or tiny_model,
                 embed_model=req.embed_model or embed_model,
                 depth=req.depth or depth,
                 n_subquestions=req.n_subquestions or n_subquestions,
@@ -218,7 +213,6 @@ def make_app(
                 base_url=base_url,
                 llm_model=req.llm_model or llm_model,
                 fast_model=req.fast_model or fast_model,
-                tiny_model=req.tiny_model or tiny_model,
                 embed_model=req.embed_model or embed_model,
                 depth=req.depth or depth,
                 n_subquestions=req.n_subquestions or n_subquestions,

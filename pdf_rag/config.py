@@ -15,9 +15,8 @@ def _int(name: str, default: int) -> int:
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
-DEEP_MODEL = os.getenv("DEEP_MODEL", "mistral:7b")
-FAST_MODEL = os.getenv("FAST_MODEL", DEEP_MODEL)
-TINY_MODEL = os.getenv("TINY_MODEL", FAST_MODEL)
+LLM_MODEL  = os.getenv("LLM_MODEL",  "mistral:7b")
+FAST_MODEL = os.getenv("FAST_MODEL", LLM_MODEL)
 DB_PATH = os.getenv("DB_PATH", str(Path.home() / ".pdf-rag" / "chroma_db"))
 SESSIONS_PATH = Path(os.getenv("SESSIONS_PATH", str(Path.home() / ".pdf-rag" / "sessions")))
 CHUNK_SIZE = _int("CHUNK_SIZE", 800)
@@ -31,7 +30,7 @@ RESEARCH_N_SUBQUESTIONS = _int("RESEARCH_N_SUBQUESTIONS", 3)
 SEARCH_LANGUAGES: list[str] = [
     l.strip() for l in os.environ.get("SEARCH_LANGUAGES", "").split(",") if l.strip()
 ]
-TRANSLATE_MODEL: str = os.environ.get("TRANSLATE_MODEL", TINY_MODEL)
+TRANSLATE_MODEL: str = os.environ.get("TRANSLATE_MODEL", FAST_MODEL)
 SERVER_URL: str = os.environ.get("PEDRO_SERVER_URL", "")
 PDF_EXPORT_PATH: str = os.path.expanduser(
     os.environ.get("PEDRO_PDF_PATH", "~/.pedro/exports")

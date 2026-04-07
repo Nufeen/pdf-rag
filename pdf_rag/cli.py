@@ -2,14 +2,13 @@ import click
 
 from .config import (
     DB_PATH,
-    DEEP_MODEL,
+    LLM_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
     SEARCH_LANGUAGES,
-    TINY_MODEL,
     TOP_K,
     TRANSLATE_MODEL,
     SERVER_URL,
@@ -47,31 +46,30 @@ def index(folder, db_path, embed_model, ollama_url, force):
 @cli.command()
 @click.argument("question")
 @click.option("--db-path", default=DB_PATH, show_default=True, help="ChromaDB storage path")
-@click.option("--deep-model", default=DEEP_MODEL, show_default=True, help="Ollama LLM model")
+@click.option("--model", default=LLM_MODEL, show_default=True, help="Ollama LLM model")
 @click.option("--embed-model", default=EMBED_MODEL, show_default=True, help="Ollama embedding model")
 @click.option("--ollama-url", envvar="OLLAMA_BASE_URL", default=OLLAMA_BASE_URL, show_default=True, help="Ollama base URL")
 @click.option("--top-k", default=TOP_K, show_default=True, type=int, help="Number of chunks to retrieve")
 @click.option("--no-sources", is_flag=True, help="Hide retrieved source list")
-def ask(question, db_path, deep_model, embed_model, ollama_url, top_k, no_sources):
+def ask(question, db_path, model, embed_model, ollama_url, top_k, no_sources):
     """Ask a QUESTION against the indexed PDF library."""
     run_ask(
         question=question,
         db_path=db_path,
         base_url=ollama_url,
-        llm_model=deep_model,
+        llm_model=model,
         embed_model=embed_model,
         top_k=top_k,
         show_sources=not no_sources,
     )
-    click.echo(click.style(f"model: {deep_model}", fg="bright_black"))
+    click.echo(click.style(f"model: {model}", fg="bright_black"))
 
 
 @cli.command("research")
 @click.argument("question")
 @click.option("--db-path", default=DB_PATH, show_default=True, help="ChromaDB storage path")
-@click.option("--deep-model", default=DEEP_MODEL, show_default=True, help="Quality model for final synthesis")
-@click.option("--fast-model", default=FAST_MODEL, show_default=True, help="Model for sub-question answers and intermediate synthesis")
-@click.option("--tiny-model", default=TINY_MODEL, show_default=True, help="Model for planning and reflection (3B recommended)")
+@click.option("--model", default=LLM_MODEL, show_default=True, help="LLM model for final synthesis and ask")
+@click.option("--fast-model", default=FAST_MODEL, show_default=True, help="Model for sub-question answers, planning and reflection")
 @click.option("--embed-model", default=EMBED_MODEL, show_default=True, help="Ollama embedding model")
 @click.option("--ollama-url", envvar="OLLAMA_BASE_URL", default=OLLAMA_BASE_URL, show_default=True, help="Ollama base URL")
 @click.option("--depth", default=RESEARCH_DEPTH, show_default=True, type=int, help="Max reflection iterations")
@@ -79,15 +77,14 @@ def ask(question, db_path, deep_model, embed_model, ollama_url, top_k, no_source
 @click.option("--top-k", default=TOP_K, show_default=True, type=int, help="Chunks retrieved per sub-question")
 @click.option("--languages", default=",".join(SEARCH_LANGUAGES), show_default=True, help="Comma-separated languages for query translation (e.g. Russian,French)")
 @click.option("--translate-model", default=TRANSLATE_MODEL, show_default=True, help="Model used for query translation")
-def research_cmd(question, db_path, deep_model, fast_model, tiny_model, embed_model, ollama_url, depth, sub_questions, top_k, languages, translate_model):
+def research_cmd(question, db_path, model, fast_model, embed_model, ollama_url, depth, sub_questions, top_k, languages, translate_model):
     """Deep multi-step research over the indexed PDF library."""
     research(
         question=question,
         db_path=db_path,
         base_url=ollama_url,
-        llm_model=deep_model,
+        llm_model=model,
         fast_model=fast_model,
-        tiny_model=tiny_model,
         embed_model=embed_model,
         depth=depth,
         n_subquestions=sub_questions,
@@ -95,11 +92,9 @@ def research_cmd(question, db_path, deep_model, fast_model, tiny_model, embed_mo
         languages=[l.strip() for l in languages.split(",") if l.strip()],
         translate_model=translate_model,
     )
-    models_line = deep_model
-    if fast_model != deep_model:
+    models_line = model
+    if fast_model != model:
         models_line += f"  ·  {fast_model}"
-    if tiny_model != fast_model:
-        models_line += f"  ·  {tiny_model}"
     click.echo(click.style(f"models: {models_line}", fg="bright_black"))
 
 
@@ -113,9 +108,8 @@ def serve(host, port):
     app = make_app(
         db_path=DB_PATH,
         base_url=OLLAMA_BASE_URL,
-        llm_model=DEEP_MODEL,
+        llm_model=LLM_MODEL,
         fast_model=FAST_MODEL,
-        tiny_model=TINY_MODEL,
         embed_model=EMBED_MODEL,
         depth=RESEARCH_DEPTH,
         n_subquestions=RESEARCH_N_SUBQUESTIONS,

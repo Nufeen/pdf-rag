@@ -8,7 +8,7 @@ from ..config import (
     DB_PATH,
     EMBED_MODEL,
     FAST_MODEL,
-    DEEP_MODEL,
+    LLM_MODEL,
     OLLAMA_BASE_URL,
     PDF_EXPORT_PATH,
     RESEARCH_DEPTH,
@@ -16,7 +16,6 @@ from ..config import (
     SEARCH_LANGUAGES,
     SESSIONS_PATH,
     SERVER_URL,
-    TINY_MODEL,
     TOP_K,
     TRANSLATE_MODEL,
 )
@@ -97,9 +96,9 @@ class PedroApp(App):
     def _update_status(self) -> None:
         mode = self.mode
         if mode == "ask":
-            models = f"model: [dim]{DEEP_MODEL}[/dim]"
+            models = f"model: [dim]{LLM_MODEL}[/dim]"
         else:
-            models = f"deep: [dim]{DEEP_MODEL}[/dim]  fast: [dim]{FAST_MODEL}[/dim]  tiny: [dim]{TINY_MODEL}[/dim]"
+            models = f"llm: [dim]{LLM_MODEL}[/dim]  fast: [dim]{FAST_MODEL}[/dim]"
         self.query_one("#status", Static).update(
             f" mode: [bold]{mode}[/bold]  │  {models}  │  top_k: [dim]{self.top_k}[/dim]"
         )
@@ -226,7 +225,7 @@ class PedroApp(App):
                 stream_ask(
                     server_url=SERVER_URL,
                     question=question,
-                    params={"llm_model": DEEP_MODEL, "embed_model": EMBED_MODEL, "top_k": self.top_k},
+                    params={"llm_model": LLM_MODEL, "embed_model": EMBED_MODEL, "top_k": self.top_k},
                     on_token=emit,
                     log_fn=log_fn,
                     check=check,
@@ -236,7 +235,7 @@ class PedroApp(App):
                     question=question,
                     db_path=DB_PATH,
                     base_url=OLLAMA_BASE_URL,
-                    llm_model=DEEP_MODEL,
+                    llm_model=LLM_MODEL,
                     embed_model=EMBED_MODEL,
                     top_k=self.top_k,
                     log_fn=log_fn,
@@ -282,9 +281,8 @@ class PedroApp(App):
                     server_url=SERVER_URL,
                     question=question,
                     params={
-                        "llm_model": DEEP_MODEL,
+                        "llm_model": LLM_MODEL,
                         "fast_model": FAST_MODEL,
-                        "tiny_model": TINY_MODEL,
                         "embed_model": EMBED_MODEL,
                         "depth": RESEARCH_DEPTH,
                         "n_subquestions": RESEARCH_N_SUBQUESTIONS,
@@ -301,9 +299,8 @@ class PedroApp(App):
                     question=question,
                     db_path=DB_PATH,
                     base_url=OLLAMA_BASE_URL,
-                    llm_model=DEEP_MODEL,
+                    llm_model=LLM_MODEL,
                     fast_model=FAST_MODEL,
-                    tiny_model=TINY_MODEL,
                     embed_model=EMBED_MODEL,
                     depth=RESEARCH_DEPTH,
                     n_subquestions=RESEARCH_N_SUBQUESTIONS,
