@@ -215,6 +215,7 @@ def research(
     collection = _open_collection(db_path)
     client = Client(host=base_url)
     all_findings: list[dict] = []
+    answer_finalized = False
 
     for iteration in range(depth):
         _check()
@@ -237,6 +238,7 @@ def research(
                 ok("Answer is sufficient.")
                 step("Final answer:\n")
                 synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+                answer_finalized = True
                 break
             info(f"→ {len(followups)} follow-up sub-question(s) identified:")
             for i, sq in enumerate(followups, 1):
@@ -276,8 +278,9 @@ def research(
             _check()
             all_findings.append({"subquestion": sq, "answer": answer, "chunks": chunks})
 
-    step("Synthesizing final answer...\n")
-    synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+    if not answer_finalized:
+        step("Synthesizing final answer...\n")
+        synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
 
     pages_by_file: dict[str, set[int]] = {}
     for finding in all_findings:
