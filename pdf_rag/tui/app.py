@@ -19,6 +19,7 @@ from ..config import (
     TOP_K,
     TRANSLATE_MODEL,
 )
+from ..context_manager import SessionContext
 from ..researcher import research, run_ask
 from ..session_log import SessionLog
 from .pdf_export import export_to_pdf
@@ -83,6 +84,7 @@ class PedroApp(App):
         self._session_log = SessionLog(SESSIONS_PATH)
         self._history = SessionLog.load_latest(SESSIONS_PATH)
         self._history_idx = -1
+        self._session_ctx = SessionContext()
         write_welcome(self.query_one("#output", RichLog), len(self._history))
         self._update_status()
         self.query_one(Input).focus()
@@ -240,6 +242,7 @@ class PedroApp(App):
                     top_k=self.top_k,
                     log_fn=log_fn,
                     on_token=emit,
+                    session_ctx=self._session_ctx,
                 )
             if line_buf:
                 self.call_from_thread(log.write, line_buf)
@@ -310,6 +313,7 @@ class PedroApp(App):
                     log_fn=log_fn,
                     on_token=emit,
                     check=check,
+                    session_ctx=self._session_ctx,
                 )
             if line_buf:
                 self.call_from_thread(log.write, line_buf)

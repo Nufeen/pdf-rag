@@ -18,6 +18,7 @@ from .config import (
     TOP_K,
     TRANSLATE_MODEL,
 )
+from .context_manager import SessionContext
 from .llm import generate_answer, load_prompt
 from .retriever import query
 
@@ -228,6 +229,7 @@ def research(
     log_fn: Callable[[str], None] | None = None,
     on_token: Callable[[str], None] | None = None,
     check: Callable[[], None] | None = None,
+    session_ctx: SessionContext | None = None,
 ) -> None:
     _check = check or (lambda: None)
     step = (lambda msg: log_fn(f"\n🪅 {msg}")) if log_fn else _step
@@ -261,7 +263,9 @@ def research(
             if followups is None:
                 ok("Answer is sufficient.")
                 step("Final answer:\n")
-                synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+                final_answer = synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+                if session_ctx:
+                    session_ctx.update(question, final_answer, client, llm_model)
                 answer_finalized = True
                 break
             info(f"→ {len(followups)} follow-up sub-question(s) identified:")
@@ -304,7 +308,9 @@ def research(
 
     if not answer_finalized:
         step("Synthesizing final answer...\n")
-        synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+        final_answer = synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+        if session_ctx:
+            session_ctx.update(question, final_answer, client, llm_model)
 
     pages_by_file: dict[str, set[int]] = {}
     for finding in all_findings:
@@ -338,6 +344,7 @@ def run_ask(
     log_fn: Callable[[str], None] | None = None,
     on_token: Callable[[str], None] | None = None,
     show_sources: bool = True,
+    session_ctx: SessionContext | None = None,
 ) -> str:
     """Run the ask pipeline. Returns the full answer string, or '' if no chunks found."""
     _info_fn = (lambda msg: log_fn(f"  {msg}")) if log_fn else _info
@@ -355,10 +362,14 @@ def run_ask(
             _info_fn(f"{c['source_file']} (page {c['page_num']}, score: {c['score']:.3f})")
         (log_fn or click.echo)("\n")
 
-    return generate_answer(
+    answer = generate_answer(
         question=question,
         chunks=chunks,
         base_url=base_url,
         llm_model=llm_model,
         on_token=on_token,
+        session_context=session_ctx.summary if session_ctx else "",
     )
+    if session_ctx and answer:
+        session_ctx.update(question, answer, client=Client(host=base_url), model=llm_model)
+    return answer

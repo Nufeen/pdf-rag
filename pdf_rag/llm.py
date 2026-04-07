@@ -35,8 +35,11 @@ def generate_answer(
     llm_model: str = LLM_MODEL,
     stream: bool = True,
     on_token: Callable[[str], None] | None = None,
+    session_context: str = "",
 ) -> str:
     context = build_context(chunks)
+    if session_context:
+        context = f"Session context:\n{session_context}\n\n---\n\n{context}"
     user_message = (
         f"Context excerpts:\n\n{context}\n\n---\n\n"
         f"Question: {question}\n\n"
