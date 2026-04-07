@@ -105,7 +105,13 @@ def synthesize(
         raise
 
 
-def extract_citations(chunks: list[dict], base_url: str, model: str) -> str:
+def extract_citations(
+    chunks: list[dict],
+    client: Client,
+    model: str,
+    stream: bool = True,
+    on_token: Callable[[str], None] | None = None,
+) -> str:
     seen: set[tuple] = set()
     unique_texts: list[str] = []
     for chunk in chunks:
@@ -114,14 +120,24 @@ def extract_citations(chunks: list[dict], base_url: str, model: str) -> str:
             seen.add(key)
             unique_texts.append(chunk["text"])
     context = "\n\n---\n\n".join(unique_texts)
-    client = Client(host=base_url)
     prompt = load_prompt("extract_citations", context=context)
     response = client.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        stream=False,
+        stream=stream,
     )
-    return response["message"]["content"].strip()
+    if stream:
+        _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
+        full = ""
+        for part in response:
+            token = part["message"]["content"]
+            _emit(token)
+            full += token
+        if on_token is None:
+            print()
+        return full
+    else:
+        return response["message"]["content"].strip()
 
 
 def own_take(
@@ -311,13 +327,8 @@ def research(
 
     all_chunks = [chunk for finding in all_findings for chunk in finding["chunks"]]
     if all_chunks:
-        citations = extract_citations(all_chunks, base_url, fast_model)
-        if citations:
-            step("Referenced in chunks:")
-            for line in citations.splitlines():
-                line = line.strip()
-                if line:
-                    info(line)
+        step("Referenced in chunks:")
+        extract_citations(all_chunks, client, fast_model, stream=True, on_token=on_token)
 
     step(f"Model's take ({llm_model}):")
     take = own_take(question, client, llm_model, stream=True, on_token=on_token)
