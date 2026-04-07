@@ -124,15 +124,31 @@ def extract_citations(chunks: list[dict], base_url: str, model: str) -> str:
     return response["message"]["content"].strip()
 
 
-def own_take(question: str, base_url: str, model: str) -> str:
-    client = Client(host=base_url)
+def own_take(
+    question: str,
+    client: Client,
+    model: str,
+    stream: bool = True,
+    on_token: Callable[[str], None] | None = None,
+) -> str:
     prompt = load_prompt("own_take", question=question)
     response = client.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        stream=False,
+        stream=stream,
     )
-    return response["message"]["content"].strip()
+    if stream:
+        _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
+        full = ""
+        for part in response:
+            token = part["message"]["content"]
+            _emit(token)
+            full += token
+        if on_token is None:
+            print()
+        return full
+    else:
+        return response["message"]["content"].strip()
 
 
 def translate_question(text: str, lang: str, client: Client, model: str) -> str:
@@ -303,10 +319,10 @@ def research(
                 if line:
                     info(line)
 
-    take = own_take(question, base_url, llm_model)
+    step(f"Model's take ({llm_model}):")
+    take = own_take(question, client, llm_model, stream=True, on_token=on_token)
     if take:
-        step(f"Model's take ({llm_model}):")
-        info(take)
+        info(take.strip())
 
 
 def run_ask(
