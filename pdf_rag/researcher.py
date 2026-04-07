@@ -66,6 +66,22 @@ def reflect(question: str, answer: str, client: Client, model: str) -> list[str]
     return lines if lines else None
 
 
+def _stream_response(
+    response,
+    on_token: Callable[[str], None] | None = None,
+) -> str:
+    """Stream response tokens and return full content."""
+    _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
+    full = ""
+    for part in response:
+        token = part["message"]["content"]
+        _emit(token)
+        full += token
+    if on_token is None:
+        print()
+    return full
+
+
 def synthesize(
     question: str,
     findings: list[dict],
@@ -88,15 +104,7 @@ def synthesize(
             stream=stream,
         )
         if stream:
-            _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
-            full = ""
-            for part in response:
-                token = part["message"]["content"]
-                _emit(token)
-                full += token
-            if on_token is None:
-                print()
-            return full
+            return _stream_response(response, on_token)
         else:
             return response["message"]["content"]
     except Exception as e:
@@ -127,15 +135,7 @@ def extract_citations(
         stream=stream,
     )
     if stream:
-        _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
-        full = ""
-        for part in response:
-            token = part["message"]["content"]
-            _emit(token)
-            full += token
-        if on_token is None:
-            print()
-        return full
+        return _stream_response(response, on_token)
     else:
         return response["message"]["content"].strip()
 
@@ -154,15 +154,7 @@ def own_take(
         stream=stream,
     )
     if stream:
-        _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
-        full = ""
-        for part in response:
-            token = part["message"]["content"]
-            _emit(token)
-            full += token
-        if on_token is None:
-            print()
-        return full
+        return _stream_response(response, on_token)
     else:
         return response["message"]["content"].strip()
 
