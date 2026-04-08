@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fpdf import FPDF
 
-FONTS_DIR = Path(__file__).parent.parent / "fonts"
+FONTS_DIR = Path(__file__).parent / "fonts"
 
 
 def export_to_pdf(question: str, answer: str, output_dir: str) -> Path:
