@@ -110,54 +110,8 @@ def synthesize(
             return response["message"]["content"]
     except Exception as e:
         if "connection" in str(e).lower() or "refused" in str(e).lower():
-            raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?")
+            raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and OLLAMA_BASE_URL correct?")
         raise
-
-
-def extract_citations(
-    chunks: list[dict],
-    client: Client,
-    model: str,
-    stream: bool = True,
-    on_token: Callable[[str], None] | None = None,
-) -> str:
-    seen: set[tuple] = set()
-    unique_texts: list[str] = []
-    for chunk in chunks:
-        key = (chunk["source_file"], chunk["page_num"], chunk["text"][:40])
-        if key not in seen:
-            seen.add(key)
-            unique_texts.append(chunk["text"])
-    context = "\n\n---\n\n".join(unique_texts)
-    prompt = load_prompt("extract_citations", context=context)
-    response = client.chat(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        stream=stream,
-    )
-    if stream:
-        return _stream_response(response, on_token)
-    else:
-        return response["message"]["content"].strip()
-
-
-def own_take(
-    question: str,
-    client: Client,
-    model: str,
-    stream: bool = True,
-    on_token: Callable[[str], None] | None = None,
-) -> str:
-    prompt = load_prompt("own_take", question=question)
-    response = client.chat(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        stream=stream,
-    )
-    if stream:
-        return _stream_response(response, on_token)
-    else:
-        return response["message"]["content"].strip()
 
 
 def translate_question(text: str, lang: str, client: Client, model: str) -> str:
@@ -322,16 +276,6 @@ def research(
         for filename in sorted(pages_by_file):
             pages = ", ".join(str(p) for p in sorted(pages_by_file[filename]))
             info(f"{filename} — pages {pages}")
-
-    all_chunks = [chunk for finding in all_findings for chunk in finding["chunks"]]
-    if all_chunks:
-        step("Referenced in chunks:")
-        extract_citations(all_chunks, client, fast_model, stream=True, on_token=on_token)
-
-    step(f"Model's take ({llm_model}):")
-    take = own_take(question, client, llm_model, stream=True, on_token=on_token)
-    if take:
-        info(take.strip())
 
 
 def run_ask(

@@ -125,14 +125,3 @@ def test_sources_stage_lists_pages(seeded_collection, mock_embed, mock_ollama_ch
         seeded_collection,
     )
     assert "pages" in result.output
-
-
-# ── Stage: Citations ───────────────────────────────────────────────────────────
-
-def test_citations_stage_present(seeded_collection, mock_embed, mock_ollama_chat):
-    """extract_citations mock returns non-empty so the section always fires."""
-    result = run_research(
-        ["What is entropy?", "--depth", "1", "--sub-questions", "1"],
-        seeded_collection,
-    )
-    assert "Referenced in chunks:" in result.output
