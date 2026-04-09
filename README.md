@@ -58,7 +58,6 @@ That's it. Re-run `pedro index ~/Books/` whenever you add new PDFs — only new 
 | LLM            | any via Ollama                      | See recomendations below                                 |
 | Ollama host    | Remote (local network)              | Set via `OLLAMA_BASE_URL=http://<host-ip>:11434`         |
 | CLI            | Click + Textual (adr 1 for details) | https://click.palletsprojects.com/en/stable/             |
-| Framework      | None (raw components)               | RAG pipeline is simple; no LlamaIndex/LangChain overhead |
 
 ## Testing
 
@@ -296,8 +295,6 @@ The fundamental differences between symbolic and connectionist AI...
 | Reflect | Evaluates completeness; identifies gaps or follow-up questions. Repeats Execute if needed, up to `--depth` passes | `FAST_MODEL` |
 | Synthesize | Combines all findings into a final answer with citations | `LLM_MODEL` |
 | Sources | Lists PDF files and page numbers from all retrieved chunks | — |
-| Referenced in chunks | Extracts author names, paper/book titles, URLs mentioned inside the retrieved text | `FAST_MODEL` |
-| Model's take | Brief perspective from the model's own training knowledge, independent of the PDFs | `LLM_MODEL` |
 
 Control depth and breadth:
 
