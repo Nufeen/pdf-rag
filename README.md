@@ -514,7 +514,13 @@ uv run python -m eval.evaluate --models mistral:7b,llama3:8b --top-k 3,5,10 --ju
 
 ### Output
 
-Results are saved to `eval/results/<timestamp>.csv` and a pivot table is printed showing average scores per configuration.
+Results are saved to `eval/results/<timestamp>.csv` and a pivot table is printed showing:
+
+| Column | Description |
+|--------|-------------|
+| `Avg Score` | Weighted average of factual (0.75) and semantic (0.25) scores |
+| `Avg Time` | Average time per question (retrieval + generation + scoring) |
+| `Q/min` | Questions processed per minute |
 
 ## Notes
 
