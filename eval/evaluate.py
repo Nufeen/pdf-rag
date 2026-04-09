@@ -55,7 +55,9 @@ def run_evaluation(
                 ground_truth = item["ground_truth"]
                 tags = item.get("tags", [])
 
-                print(f"[{current}/{total}] {model} | top_k={top_k} | {question[:50]}...")
+                print(
+                    f"[{current}/{total}] {model} | top_k={top_k} | {question[:50]}..."
+                )
 
                 start = time.perf_counter()
 
@@ -86,16 +88,18 @@ def run_evaluation(
 
                 elapsed = time.perf_counter() - start
 
-                results.append({
-                    "question": question,
-                    "answer": answer,
-                    "ground_truth": ground_truth,
-                    "tags": ",".join(tags),
-                    "llm_model": model,
-                    "top_k": top_k,
-                    "score": round(s, 4),
-                    "time_seconds": round(elapsed, 2),
-                })
+                results.append(
+                    {
+                        "question": question,
+                        "answer": answer,
+                        "ground_truth": ground_truth,
+                        "tags": ",".join(tags),
+                        "llm_model": model,
+                        "top_k": top_k,
+                        "score": round(s, 4),
+                        "time_seconds": round(elapsed, 2),
+                    }
+                )
 
     return results
 
@@ -113,7 +117,9 @@ def print_pivot_table(results: list[dict]) -> None:
         groups.setdefault(key, []).append(r)
 
     # Print table
-    print(f"{'Model':<20} {'Top-K':<8} {'Avg Score':<10} {'Avg Time':<10} {'Q/min':<8} {'Count':<6}")
+    print(
+        f"{'Model':<20} {'Top-K':<8} {'Avg Score':<10} {'Avg Time':<10} {'Q/min':<8} {'Count':<6}"
+    )
     print("-" * 80)
     for (model, top_k), items in sorted(groups.items()):
         scores = [i["score"] for i in items]
@@ -121,7 +127,9 @@ def print_pivot_table(results: list[dict]) -> None:
         avg_score = np.mean(scores) if scores else 0.0
         avg_time = np.mean(times) if times else 0.0
         q_per_min = round(60.0 / avg_time, 1) if avg_time > 0 else 0.0
-        print(f"{model:<20} {top_k:<8} {avg_score:<10.4f} {avg_time:<10.2f}s {q_per_min:<8.1f} {len(items):<6}")
+        print(
+            f"{model:<20} {top_k:<8} {avg_score:<10.4f} {avg_time:<10.2f}s {q_per_min:<8.1f} {len(items):<6}"
+        )
     print("=" * 80)
 
 
@@ -133,10 +141,19 @@ def save_results(results: list[dict], output_dir: str) -> Path:
     path = out / f"eval_{ts}.csv"
 
     with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=[
-            "question", "answer", "ground_truth", "tags",
-            "llm_model", "top_k", "score", "time_seconds"
-        ])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "question",
+                "answer",
+                "ground_truth",
+                "tags",
+                "llm_model",
+                "top_k",
+                "score",
+                "time_seconds",
+            ],
+        )
         writer.writeheader()
         writer.writerows(results)
 
@@ -188,6 +205,12 @@ def main() -> None:
         help="Path to dataset.jsonl (default: eval/dataset.jsonl)",
     )
     parser.add_argument(
+        "--num-entries",
+        type=int,
+        default=None,
+        help="Number of dataset entries to evaluate (default: all)",
+    )
+    parser.add_argument(
         "--output-dir",
         type=str,
         default=str(Path(__file__).parent / "results"),
@@ -202,6 +225,10 @@ def main() -> None:
 
     print(f"Loading dataset: {args.dataset}")
     dataset = load_dataset(args.dataset)
+
+    if args.num_entries is not None:
+        dataset = dataset[: args.num_entries]
+
     print(f"Loaded {len(dataset)} Q&A pairs")
 
     print(f"\nEvaluation matrix:")
