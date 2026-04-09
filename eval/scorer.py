@@ -6,6 +6,8 @@ import numpy as np
 import requests
 from ollama import Client
 
+from pdf_rag.llm import load_prompt
+
 
 def factual_score(
     question: str,
@@ -20,13 +22,9 @@ def factual_score(
     Returns a float between 0.0 and 1.0.
     Falls back to 0.0 on parse failure.
     """
-    prompt = f"""You are a strict evaluator. Given a question, a ground truth answer, and a candidate answer,
-rate how factually correct the candidate is compared to the ground truth.
-Respond with a single decimal number between 0.0 and 1.0. Nothing else.
-
-Question: {question}
-Ground truth: {ground_truth}
-Answer: {answer}"""
+    prompt = load_prompt(
+        "evaluate_answer", question=question, ground_truth=ground_truth, answer=answer
+    )
 
     try:
         response = client.chat(

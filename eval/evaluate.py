@@ -59,15 +59,14 @@ def run_evaluation(
                     f"[{current}/{total}] {model} | top_k={top_k} | {question[:50]}..."
                 )
 
-                start = time.perf_counter()
-
-                # Retrieve and generate answer
                 chunks = query(question, collection, embed_model, base_url, top_k)
                 if not chunks:
                     print(f"  (no chunks found)")
                     answer = ""
                     s = 0.0
+                    answer_time = 0.0
                 else:
+                    answer_start = time.perf_counter()
                     answer = generate_answer(
                         question=question,
                         chunks=chunks,
@@ -75,7 +74,8 @@ def run_evaluation(
                         llm_model=model,
                         stream=False,
                     )
-                    # Score the answer
+                    answer_time = time.perf_counter() - answer_start
+                    # Score the answer (not timed)
                     s = score(
                         question=question,
                         answer=answer,
@@ -86,8 +86,6 @@ def run_evaluation(
                         base_url=base_url,
                     )
 
-                elapsed = time.perf_counter() - start
-
                 results.append(
                     {
                         "question": question,
@@ -97,7 +95,7 @@ def run_evaluation(
                         "llm_model": model,
                         "top_k": top_k,
                         "score": round(s, 4),
-                        "time_seconds": round(elapsed, 2),
+                        "time_seconds": round(answer_time, 2),
                     }
                 )
 

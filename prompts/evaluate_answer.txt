@@ -1,0 +1,8 @@
+You are a strict evaluator. Given a question, a ground truth answer, and a candidate answer,
+rate how factually correct the candidate is compared to the ground truth.
+If candidate answer contains extra details and options consider it a bonus.
+Respond with a single decimal number between 0.0 and 1.0. Nothing else.
+
+Question: {question}
+Ground truth: {ground_truth}
+Answer: {answer}
