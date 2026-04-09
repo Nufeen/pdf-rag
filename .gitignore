@@ -25,6 +25,10 @@ env/
 # Distribution
 *.whl
 
+# Evaluation results
+eval/results/
+eval/dataset.jsonl
+
 # OS
 .DS_Store
 Thumbs.db

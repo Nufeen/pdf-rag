@@ -472,6 +472,50 @@ All prompts live in the `prompts/` folder. Edit any file directly — changes ta
 
 Prompt files support `{placeholders}` filled at runtime. Do not remove placeholders — the tool will fail if they are missing.
 
+## RAG Evaluation
+
+Pedro includes a custom evaluation framework to measure answer quality across different configurations (models, top_k, etc.). See **[ADR-0007](adr/0007-rag-evaluation-framework.md)** for design rationale.
+
+### Setup
+
+```bash
+# Copy the example dataset and edit with your Q&A pairs
+cp eval/dataset.jsonl.example eval/dataset.jsonl
+```
+
+Edit `eval/dataset.jsonl` — one JSON object per line:
+
+```jsonl
+{"question": "...", "ground_truth": "...", "tags": ["topic"]}
+```
+
+### Run Evaluation
+
+```bash
+# Single model, default top_k=5
+uv run python -m eval.evaluate
+
+# Full matrix: multiple models and top_k values
+uv run python -m eval.evaluate --models mistral:7b,llama3:8b --top-k 3,5,10 --judge mistral:7b
+```
+
+**CLI options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--models` | `LLM_MODEL` | Comma-separated model names to evaluate |
+| `--top-k` | `TOP_K` | Comma-separated top_k values to test |
+| `--judge` | first `--models` entry | Model used for factual scoring |
+| `--db-path` | `DB_PATH` | Path to ChromaDB |
+| `--ollama-url` | `OLLAMA_BASE_URL` | Ollama host URL |
+| `--embed-model` | `EMBED_MODEL` | Embedding model for semantic similarity |
+| `--dataset` | `eval/dataset.jsonl` | Path to your Q&A dataset |
+| `--output-dir` | `eval/results/` | Where to save CSV results |
+
+### Output
+
+Results are saved to `eval/results/<timestamp>.csv` and a pivot table is printed showing average scores per configuration.
+
 ## Notes
 
 Tools and projects to look at in the context of the problem:
