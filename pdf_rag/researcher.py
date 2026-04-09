@@ -1,3 +1,4 @@
+from collections import defaultdict
 from collections.abc import Callable
 
 import chromadb
@@ -266,10 +267,10 @@ def research(
         if session_ctx:
             session_ctx.update(question, final_answer, client, llm_model)
 
-    pages_by_file: dict[str, set[int]] = {}
+    pages_by_file: dict[str, set[int]] = defaultdict(set)
     for finding in all_findings:
         for chunk in finding["chunks"]:
-            pages_by_file.setdefault(chunk["source_file"], set()).add(chunk["page_num"])
+            pages_by_file[chunk["source_file"]].add(chunk["page_num"])
 
     if pages_by_file:
         step("Sources:")
