@@ -31,7 +31,7 @@ eval/dataset.jsonl
 eval/prompt_variants
 
 # User prompts
-prompts/user_prompts/
+prompts/user_prompts/*.txt
 
 # OS
 .DS_Store
