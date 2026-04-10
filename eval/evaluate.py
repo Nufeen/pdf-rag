@@ -38,97 +38,120 @@ def run_evaluation(
     models: list[str],
     top_ks: list[int],
     judge_model: str,
+    prompt_variants: list[tuple[str | None, str | None]],
 ) -> list[dict]:
     """Run evaluation matrix and return results."""
     collection = _open_collection(db_path)
     client = Client(host=base_url)
     results = []
 
-    total = len(models) * len(top_ks) * len(dataset)
+    total = len(models) * len(top_ks) * len(prompt_variants) * len(dataset)
     current = 0
 
     for model in models:
         for top_k in top_ks:
-            for item in dataset:
-                current += 1
-                question = item["question"]
-                ground_truth = item["ground_truth"]
-                tags = item.get("tags", [])
+            for variant_name, system_prompt in prompt_variants:
+                for item in dataset:
+                    current += 1
+                    question = item["question"]
+                    ground_truth = item["ground_truth"]
+                    tags = item.get("tags", [])
 
-                print(
-                    f"[{current}/{total}] {model} | top_k={top_k} | {question[:50]}..."
-                )
-
-                chunks = query(question, collection, embed_model, base_url, top_k)
-                if not chunks:
-                    print(f"  (no chunks found)")
-                    answer = ""
-                    s = 0.0
-                    answer_time = 0.0
-                else:
-                    answer_start = time.perf_counter()
-                    answer = generate_answer(
-                        question=question,
-                        chunks=chunks,
-                        base_url=base_url,
-                        llm_model=model,
-                        stream=False,
-                    )
-                    answer_time = time.perf_counter() - answer_start
-                    # Score the answer (not timed)
-                    s = score(
-                        question=question,
-                        answer=answer,
-                        ground_truth=ground_truth,
-                        client=client,
-                        judge_model=judge_model,
-                        embed_model=embed_model,
-                        base_url=base_url,
+                    print(
+                        f"[{current}/{total}] {model} | top_k={top_k} | variant={variant_name or 'default'} | {question[:40]}..."
                     )
 
-                results.append(
-                    {
-                        "question": question,
-                        "answer": answer,
-                        "ground_truth": ground_truth,
-                        "tags": ",".join(tags),
-                        "llm_model": model,
-                        "top_k": top_k,
-                        "score": round(s, 4),
-                        "time_seconds": round(answer_time, 2),
-                    }
-                )
+                    chunks = query(question, collection, embed_model, base_url, top_k)
+                    if not chunks:
+                        print(f"  (no chunks found)")
+                        answer = ""
+                        s = 0.0
+                        answer_time = 0.0
+                    else:
+                        answer_start = time.perf_counter()
+                        answer = generate_answer(
+                            question=question,
+                            chunks=chunks,
+                            base_url=base_url,
+                            llm_model=model,
+                            stream=False,
+                            system_prompt=system_prompt,
+                        )
+                        answer_time = time.perf_counter() - answer_start
+                        s = score(
+                            question=question,
+                            answer=answer,
+                            ground_truth=ground_truth,
+                            client=client,
+                            judge_model=judge_model,
+                            embed_model=embed_model,
+                            base_url=base_url,
+                        )
+
+                    results.append(
+                        {
+                            "question": question,
+                            "answer": answer,
+                            "ground_truth": ground_truth,
+                            "tags": ",".join(tags),
+                            "llm_model": model,
+                            "top_k": top_k,
+                            "prompt_variant": variant_name or "default",
+                            "score": round(s, 4),
+                            "time_seconds": round(answer_time, 2),
+                        }
+                    )
 
     return results
 
 
 def print_pivot_table(results: list[dict]) -> None:
-    """Print pivot table: model | top_k | avg_score | avg_time | q/min."""
-    print("\n" + "=" * 80)
+    """Print pivot table: model | top_k | prompt_variant | avg_score | avg_time | q/min."""
+    print("\n" + "=" * 100)
     print("RESULTS")
-    print("=" * 80)
+    print("=" * 100)
 
-    # Group by (model, top_k)
-    groups: dict[tuple[str, int], list[dict]] = {}
-    for r in results:
-        key = (r["llm_model"], r["top_k"])
-        groups.setdefault(key, []).append(r)
+    has_prompt_variants = any(r["prompt_variant"] != "default" for r in results)
 
-    # Print table
-    print(
-        f"{'Model':<20} {'Top-K':<8} {'Avg Score':<10} {'Avg Time':<10} {'Q/min':<8} {'Count':<6}"
-    )
-    print("-" * 80)
-    for (model, top_k), items in sorted(groups.items()):
-        scores = [i["score"] for i in items]
-        times = [i["time_seconds"] for i in items]
-        avg_score = np.mean(scores) if scores else 0.0
-        avg_time = np.mean(times) if times else 0.0
-        q_per_min = round(60.0 / avg_time, 1) if avg_time > 0 else 0.0
+    if has_prompt_variants:
+        groups: dict[tuple[str, int, str], list[dict]] = {}
+        for r in results:
+            key = (r["llm_model"], r["top_k"], r["prompt_variant"])
+            groups.setdefault(key, []).append(r)
+
         print(
-            f"{model:<20} {top_k:<8} {avg_score:<10.4f} {avg_time:<10.2f}s {q_per_min:<8.1f} {len(items):<6}"
+            f"{'Model':<20} {'Top-K':<8} {'Prompt':<15} {'Avg Score':<10} {'Avg Time':<10} {'Q/min':<8} {'Count':<6}"
         )
-    print("=" * 80)
+        print("-" * 100)
+        for (model, top_k, prompt_variant), items in sorted(groups.items()):
+            scores = [i["score"] for i in items]
+            times = [i["time_seconds"] for i in items]
+            avg_score = np.mean(scores) if scores else 0.0
+            avg_time = np.mean(times) if times else 0.0
+            q_per_min = round(60.0 / avg_time, 1) if avg_time > 0 else 0.0
+            print(
+                f"{model:<20} {top_k:<8} {prompt_variant:<15} {avg_score:<10.4f} {avg_time:<10.2f}s {q_per_min:<8.1f} {len(items):<6}"
+            )
+    else:
+        groups: dict[tuple[str, int], list[dict]] = {}
+        for r in results:
+            key = (r["llm_model"], r["top_k"])
+            groups.setdefault(key, []).append(r)
+
+        print(
+            f"{'Model':<20} {'Top-K':<8} {'Avg Score':<10} {'Avg Time':<10} {'Q/min':<8} {'Count':<6}"
+        )
+        print("-" * 80)
+        for (model, top_k), items in sorted(groups.items()):
+            scores = [i["score"] for i in items]
+            times = [i["time_seconds"] for i in items]
+            avg_score = np.mean(scores) if scores else 0.0
+            avg_time = np.mean(times) if times else 0.0
+            q_per_min = round(60.0 / avg_time, 1) if avg_time > 0 else 0.0
+            print(
+                f"{model:<20} {top_k:<8} {avg_score:<10.4f} {avg_time:<10.2f}s {q_per_min:<8.1f} {len(items):<6}"
+            )
+    print("=" * 100)
 
 
 def save_results(results: list[dict], output_dir: str) -> Path:
@@ -148,6 +171,7 @@ def save_results(results: list[dict], output_dir: str) -> Path:
                 "tags",
                 "llm_model",
                 "top_k",
+                "prompt_variant",
                 "score",
                 "time_seconds",
             ],
@@ -214,8 +238,22 @@ def main() -> None:
         default=str(Path(__file__).parent / "results"),
         help="Output directory for CSV (default: eval/results/)",
     )
+    parser.add_argument(
+        "--prompt-dir",
+        type=str,
+        default=None,
+        help="Directory of .txt prompt variants (optional)",
+    )
 
     args = parser.parse_args()
+
+    if args.prompt_dir:
+        prompt_dir = Path(args.prompt_dir)
+        prompt_variants = [
+            (p.stem, p.read_text().strip()) for p in sorted(prompt_dir.glob("*.txt"))
+        ]
+    else:
+        prompt_variants = [(None, None)]
 
     models = [m.strip() for m in args.models.split(",")]
     top_ks = [int(x.strip()) for x in args.top_k.split(",")]
@@ -232,6 +270,7 @@ def main() -> None:
     print(f"\nEvaluation matrix:")
     print(f"  Models: {models}")
     print(f"  Top-K: {top_ks}")
+    print(f"  Prompt variants: {[v[0] or 'default' for v in prompt_variants]}")
     print(f"  Judge: {judge_model}")
     print(f"  Embed model: {args.embed_model}")
     print()
@@ -244,6 +283,7 @@ def main() -> None:
         models=models,
         top_ks=top_ks,
         judge_model=judge_model,
+        prompt_variants=prompt_variants,
     )
 
     output_path = save_results(results, args.output_dir)

@@ -36,6 +36,7 @@ def generate_answer(
     stream: bool = True,
     on_token: Callable[[str], None] | None = None,
     session_context: str = "",
+    system_prompt: str | None = None,
 ) -> str:
     context = build_context(chunks)
     if session_context:
@@ -51,13 +52,22 @@ def generate_answer(
         response = client.chat(
             model=llm_model,
             messages=[
-                {"role": "system", "content": _load_system_prompt()},
+                {
+                    "role": "system",
+                    "content": system_prompt
+                    if system_prompt is not None
+                    else _load_system_prompt(),
+                },
                 {"role": "user", "content": user_message},
             ],
             stream=stream,
         )
         if stream:
-            _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
+            _emit = (
+                on_token
+                if on_token is not None
+                else lambda t: print(t, end="", flush=True)
+            )
             full = ""
             for part in response:
                 token = part["message"]["content"]
@@ -70,5 +80,7 @@ def generate_answer(
             return response["message"]["content"]
     except Exception as e:
         if "connection" in str(e).lower() or "refused" in str(e).lower():
-            raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?")
+            raise SystemExit(
+                f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?"
+            )
         raise

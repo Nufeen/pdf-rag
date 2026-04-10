@@ -28,6 +28,7 @@ env/
 # Evaluation results
 eval/results/
 eval/dataset.jsonl
+eval/prompt_variants
 
 # OS
 .DS_Store
@@ -36,3 +37,4 @@ Thumbs.db
 .vscode/
 
 ~/
+
