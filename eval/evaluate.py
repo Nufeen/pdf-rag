@@ -154,6 +154,74 @@ def print_pivot_table(results: list[dict]) -> None:
     print("=" * 100)
 
 
+def print_leaderboard(results: list[dict]) -> None:
+    """Print leaderboard with bar chart visualization."""
+    has_prompt_variants = any(r["prompt_variant"] != "default" for r in results)
+
+    if has_prompt_variants:
+        groups: dict[tuple[str, int, str], list[dict]] = {}
+        for r in results:
+            key = (r["llm_model"], r["top_k"], r["prompt_variant"])
+            groups.setdefault(key, []).append(r)
+
+        leaderboard = []
+        for (model, top_k, variant), items in groups.items():
+            avg_score = np.mean([i["score"] for i in items])
+            leaderboard.append((model, top_k, variant, avg_score, len(items)))
+
+        leaderboard.sort(key=lambda x: x[3], reverse=True)
+
+        if not leaderboard:
+            return
+
+        max_score = leaderboard[0][3]
+        bar_width = 15
+
+        print("\n" + "=" * 70)
+        print("LEADERBOARD")
+        print("=" * 70)
+
+        for i, (model, top_k, variant, avg_score, count) in enumerate(leaderboard):
+            bar_len = int((avg_score / max_score) * bar_width) if max_score > 0 else 0
+            bar = "█" * bar_len
+            label = f"{model}:{top_k}:{variant}"
+            leader_tag = " 🏆" if i == 0 else ""
+            print(f"{label:<30} {avg_score:.4f} {bar}{leader_tag}")
+
+        print("=" * 70)
+    else:
+        groups: dict[tuple[str, int], list[dict]] = {}
+        for r in results:
+            key = (r["llm_model"], r["top_k"])
+            groups.setdefault(key, []).append(r)
+
+        leaderboard = []
+        for (model, top_k), items in groups.items():
+            avg_score = np.mean([i["score"] for i in items])
+            leaderboard.append((model, top_k, avg_score, len(items)))
+
+        leaderboard.sort(key=lambda x: x[2], reverse=True)
+
+        if not leaderboard:
+            return
+
+        max_score = leaderboard[0][2]
+        bar_width = 20
+
+        print("\n" + "=" * 60)
+        print("LEADERBOARD")
+        print("=" * 60)
+
+        for i, (model, top_k, avg_score, count) in enumerate(leaderboard):
+            bar_len = int((avg_score / max_score) * bar_width) if max_score > 0 else 0
+            bar = "█" * bar_len
+            label = f"{model} ({top_k})"
+            leader_tag = " 🏆" if i == 0 else ""
+            print(f"{label:<25} {avg_score:.4f} {bar}{leader_tag}")
+
+        print("=" * 60)
+
+
 def save_results(results: list[dict], output_dir: str) -> Path:
     """Save results to CSV file."""
     out = Path(output_dir)
@@ -290,6 +358,7 @@ def main() -> None:
     print(f"\nResults saved to: {output_path}")
 
     print_pivot_table(results)
+    print_leaderboard(results)
 
 
 if __name__ == "__main__":

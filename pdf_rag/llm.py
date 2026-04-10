@@ -10,8 +10,12 @@ _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 
 def load_prompt(name: str, **kwargs: str) -> str:
-    path = _PROMPTS_DIR / f"{name}.txt"
-    template = path.read_text().strip()
+    user_path = _PROMPTS_DIR / "user_prompts" / f"{name}.txt"
+    if user_path.exists():
+        template = user_path.read_text().strip()
+    else:
+        default_path = _PROMPTS_DIR / "default" / f"{name}.txt"
+        template = default_path.read_text().strip()
     return template.format(**kwargs) if kwargs else template
 
 
@@ -63,11 +67,7 @@ def generate_answer(
             stream=stream,
         )
         if stream:
-            _emit = (
-                on_token
-                if on_token is not None
-                else lambda t: print(t, end="", flush=True)
-            )
+            _emit = on_token if on_token is not None else lambda t: print(t, end="", flush=True)
             full = ""
             for part in response:
                 token = part["message"]["content"]

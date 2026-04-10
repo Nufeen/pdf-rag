@@ -30,6 +30,9 @@ eval/results/
 eval/dataset.jsonl
 eval/prompt_variants
 
+# User prompts
+prompts/user_prompts/
+
 # OS
 .DS_Store
 Thumbs.db
