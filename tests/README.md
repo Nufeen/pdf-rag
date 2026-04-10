@@ -17,6 +17,12 @@ No real Ollama instance or PDF files are needed.
 uv pip install -e ".[dev]" --system-certs
 ```
 
+## Linting
+
+```bash
+uv run ruff check pdf_rag/ tests/ eval/
+```
+
 ## Run
 
 ```bash

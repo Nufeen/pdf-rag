@@ -21,7 +21,7 @@ dependencies = [
 pedro = "pdf_rag.cli:cli"
 
 [project.optional-dependencies]
-dev = ["pytest", "responses", "httpx"]
+dev = ["pytest", "responses", "httpx", "ruff"]
 
 [build-system]
 requires = ["setuptools>=68"]

@@ -42,7 +42,9 @@ def _parse_questions(text: str) -> list[str]:
     return questions
 
 
-def plan_subquestions(question: str, n: int, client: Client, model: str, covered: list[str] = []) -> list[str]:
+def plan_subquestions(
+    question: str, n: int, client: Client, model: str, covered: list[str] = []
+) -> list[str]:
     covered_text = "\n".join(f"- {q}" for q in covered) if covered else "(none)"
     prompt = load_prompt("plan_subquestions", n=str(n), question=question, covered=covered_text)
     response = client.chat(
@@ -50,7 +52,9 @@ def plan_subquestions(question: str, n: int, client: Client, model: str, covered
         messages=[{"role": "user", "content": prompt}],
         stream=False,
     )
-    lines = [l.strip() for l in response["message"]["content"].strip().splitlines() if l.strip()]
+    lines = [
+        line.strip() for line in response["message"]["content"].strip().splitlines() if line.strip()
+    ]
     return lines[:n]
 
 
@@ -64,7 +68,7 @@ def reflect(question: str, answer: str, client: Client, model: str) -> list[str]
     content = response["message"]["content"].strip()
     if content.upper().startswith("SUFFICIENT"):
         return None
-    lines = [l.strip() for l in content.splitlines() if l.strip()]
+    lines = [line.strip() for line in content.splitlines() if line.strip()]
     return lines if lines else None
 
 
@@ -111,7 +115,9 @@ def synthesize(
             return response["message"]["content"]
     except Exception as e:
         if "connection" in str(e).lower() or "refused" in str(e).lower():
-            raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and OLLAMA_BASE_URL correct?")
+            raise SystemExit(
+                f"Cannot reach Ollama at {base_url}. Is it running and OLLAMA_BASE_URL correct?"
+            )
         raise
 
 
@@ -189,7 +195,7 @@ def research(
     _check = check or (lambda: None)
     step = (lambda msg: log_fn(f"\n🪅 {msg}")) if log_fn else _step
     info = (lambda msg: log_fn(f"  {msg}")) if log_fn else _info
-    dim  = (lambda msg: log_fn(f"  [dim]{msg}[/dim]")) if log_fn else _info
+    dim = (lambda msg: log_fn(f"  [dim]{msg}[/dim]")) if log_fn else _info
     ok = (lambda msg: log_fn(f"  ✓ {msg}")) if log_fn else _ok
     subq = (lambda i, total, text: log_fn(f"  [{i}/{total}] {text}")) if log_fn else _subq
 
@@ -204,7 +210,11 @@ def research(
             user_questions = _parse_questions(question)
             n_model = max(0, n_subquestions - len(user_questions))
             step(f"Planning sub-questions (user: {len(user_questions)}, model: {n_model})...")
-            model_questions = plan_subquestions(question, n_model, client, fast_model, covered=user_questions) if n_model > 0 else []
+            model_questions = (
+                plan_subquestions(question, n_model, client, fast_model, covered=user_questions)
+                if n_model > 0
+                else []
+            )
             subquestions = user_questions + model_questions
             for i, sq in enumerate(subquestions, 1):
                 info(f"{i}. {sq}")
@@ -218,7 +228,15 @@ def research(
             if followups is None:
                 ok("Answer is sufficient.")
                 step("Final answer:\n")
-                final_answer = synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+                final_answer = synthesize(
+                    question,
+                    all_findings,
+                    client,
+                    llm_model,
+                    base_url,
+                    stream=True,
+                    on_token=on_token,
+                )
                 if session_ctx:
                     session_ctx.update(question, final_answer, client, llm_model)
                 answer_finalized = True
@@ -263,7 +281,9 @@ def research(
 
     if not answer_finalized:
         step("Synthesizing final answer...\n")
-        final_answer = synthesize(question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token)
+        final_answer = synthesize(
+            question, all_findings, client, llm_model, base_url, stream=True, on_token=on_token
+        )
         if session_ctx:
             session_ctx.update(question, final_answer, client, llm_model)
 

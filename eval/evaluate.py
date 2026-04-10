@@ -63,7 +63,7 @@ def run_evaluation(
 
                     chunks = query(question, collection, embed_model, base_url, top_k)
                     if not chunks:
-                        print(f"  (no chunks found)")
+                        print("  (no chunks found)")
                         answer = ""
                         s = 0.0
                         answer_time = 0.0
@@ -267,7 +267,7 @@ def main() -> None:
 
     print(f"Loaded {len(dataset)} Q&A pairs")
 
-    print(f"\nEvaluation matrix:")
+    print("\nEvaluation matrix:")
     print(f"  Models: {models}")
     print(f"  Top-K: {top_ks}")
     print(f"  Prompt variants: {[v[0] or 'default' for v in prompt_variants]}")

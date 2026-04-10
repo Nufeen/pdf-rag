@@ -1,7 +1,6 @@
 import json
 from unittest.mock import patch
 
-import pytest
 from starlette.testclient import TestClient
 
 from pdf_rag.server import make_app

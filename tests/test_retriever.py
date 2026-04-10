@@ -1,7 +1,7 @@
 import chromadb
 
 from pdf_rag.retriever import query
-from tests.conftest import FAKE_VECTOR, OLLAMA_URL
+from tests.conftest import OLLAMA_URL
 
 
 def test_query_returns_list_of_dicts(seeded_collection, mock_embed):
