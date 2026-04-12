@@ -8,9 +8,18 @@ from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 
-from fastapi import FastAPI
+import logging
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
+
+logger = logging.getLogger("pedro")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+logger.addHandler(handler)
 
 from ..config import (
     DB_PATH,
@@ -75,23 +84,27 @@ def _sse_pedro(kind: str, text: str = "") -> str:
 
 
 def _oai_chunk(cid: str, created: int, model: str, **delta: Any) -> str:
-    return json.dumps({
-        "id": cid,
-        "object": "chat.completion.chunk",
-        "created": created,
-        "model": model,
-        "choices": [{"index": 0, "delta": delta, "finish_reason": None}],
-    })
+    return json.dumps(
+        {
+            "id": cid,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": model,
+            "choices": [{"index": 0, "delta": delta, "finish_reason": None}],
+        }
+    )
 
 
 def _oai_stop(cid: str, created: int, model: str) -> str:
-    return json.dumps({
-        "id": cid,
-        "object": "chat.completion.chunk",
-        "created": created,
-        "model": model,
-        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-    })
+    return json.dumps(
+        {
+            "id": cid,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": model,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        }
+    )
 
 
 def make_app(
@@ -107,6 +120,23 @@ def make_app(
     translate_model: str = TRANSLATE_MODEL,
 ) -> FastAPI:
     app = FastAPI(title="pedro")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        logger.info(
+            f"Incoming: {request.method} {request.url.path} | headers: {dict(request.headers)}"
+        )
+        response = await call_next(request)
+        logger.info(f"Response: {request.method} {request.url.path} -> {response.status_code}")
+        return response
+
     _pool = ThreadPoolExecutor(max_workers=4)
 
     async def _run(fn, **kwargs) -> AsyncIterator[tuple[str, str]]:
@@ -150,6 +180,7 @@ def make_app(
     # ── pedro native endpoints ─────────────────────────────────────────────────
 
     @app.post("/v1/ask")
+    @app.get("/v1/ask")
     async def ask(req: AskRequest) -> StreamingResponse:
         return StreamingResponse(
             _stream_pedro(
@@ -166,6 +197,7 @@ def make_app(
         )
 
     @app.post("/v1/research")
+    @app.get("/v1/research")
     async def research_endpoint(req: ResearchRequest) -> StreamingResponse:
         return StreamingResponse(
             _stream_pedro(
@@ -190,19 +222,19 @@ def make_app(
     @app.get("/v1/models")
     async def list_models() -> JSONResponse:
         now = int(time.time())
-        return JSONResponse({
-            "object": "list",
-            "data": [
-                {"id": m, "object": "model", "created": now, "owned_by": "pedro"}
-                for m in _MODELS
-            ],
-        })
+        return JSONResponse(
+            {
+                "object": "list",
+                "data": [
+                    {"id": m, "object": "model", "created": now, "owned_by": "pedro"}
+                    for m in _MODELS
+                ],
+            }
+        )
 
     @app.post("/v1/chat/completions")
     async def chat_completions(req: ChatCompletionRequest):
-        question = next(
-            (m.content for m in reversed(req.messages) if m.role == "user"), ""
-        )
+        question = next((m.content for m in reversed(req.messages) if m.role == "user"), "")
         is_research = "research" in req.model
 
         if is_research:
@@ -245,17 +277,21 @@ def make_app(
                 tokens.append(text)
         content = "".join(tokens)
         cid = f"chatcmpl-{uuid.uuid4().hex[:8]}"
-        return JSONResponse({
-            "id": cid,
-            "object": "chat.completion",
-            "created": int(time.time()),
-            "model": req.model,
-            "choices": [{
-                "index": 0,
-                "message": {"role": "assistant", "content": content},
-                "finish_reason": "stop",
-            }],
-            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-        })
+        return JSONResponse(
+            {
+                "id": cid,
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": req.model,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": content},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+            }
+        )
 
     return app

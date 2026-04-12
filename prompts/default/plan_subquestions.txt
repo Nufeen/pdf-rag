@@ -6,4 +6,4 @@ Generate exactly {n} additional specific, non-overlapping sub-questions that tog
 Original question: {question}
 
 Output only the new sub-questions, one per line, without numbering or bullets.
-Think and write the sub-questions in the language of the original question.
+Write the sub-questions in the language of the original question.
