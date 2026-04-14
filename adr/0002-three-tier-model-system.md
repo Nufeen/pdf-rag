@@ -78,11 +78,16 @@ env var and CLI flag added cognitive overhead without measurable benefit.
 translate_question) now use `FAST_MODEL`. `DEEP_MODEL` was renamed to `LLM_MODEL`
 to be more descriptive and less tied to the tier hierarchy.
 
+**Addition:** `ASK_LLM_MODEL` was added to allow using a different model for the
+`ask` command specifically. This is useful when you want a faster model for quick
+questions (`pedro ask`) while keeping a high-quality model for research synthesis.
+
 Current model configuration:
 
-| Env var       | Default       | Used for |
-|---------------|---------------|----------|
-| `LLM_MODEL`   | `mistral:7b`  | `ask`, final synthesis, model's take |
-| `FAST_MODEL`  | `LLM_MODEL`   | sub-question answers, planning, reflection, citations, translation |
+| Env var           | Default            | Used for |
+|-------------------|--------------------|----------|
+| `LLM_MODEL`       | `mistral:7b`       | Final research synthesis |
+| `ASK_LLM_MODEL`   | `LLM_MODEL`        | `ask` command (falls back to `LLM_MODEL`) |
+| `FAST_MODEL`      | `LLM_MODEL`        | Sub-question answers, planning, reflection, citations, translation |
 
-CLI flags: `--model`, `--fast-model`
+CLI flags: `--model`, `--fast-model` (on `research`), `--model` (on `ask`)

@@ -4,6 +4,20 @@ HTTP server that exposes the `ask` and `research` pipelines as streaming endpoin
 
 **Architecture decision:** [ADR-0005 — Client-server architecture](../../adr/0005-client-server-architecture.md)
 
+## Security Notice
+
+**⚠️ Default configuration is for local development only.**
+
+The server enables CORS with `allow_origins=["*"]` and `allow_credentials=True` to simplify local testing. This combination is **insecure for production** and will be rejected by browsers.
+
+**For production deployment:**
+- Set explicit `allow_origins` to your trusted domains
+- Remove or restrict `allow_credentials=True` unless explicitly needed
+- Add authentication/authorization middleware
+- Filter sensitive headers from request logging (see `app.py` logging middleware)
+
+See `pdf_rag/server/app.py` CORS middleware configuration.
+
 ## Starting the server
 
 ```bash
@@ -16,7 +30,7 @@ pedro serve --host 0.0.0.0 --port 9000
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET`  | `/v1/models` | List available models (OpenAI-compatible) |
-| `POST` | `/v1/chat/completions` | OpenAI-compatible chat endpoint |
+| `POST` | `/v1/chat/completions` | OpenAI-compatible chat endpoint (streaming/non-streaming) |
 | `POST` | `/v1/ask` | Pedro-native ask, streamed as SSE |
 | `POST` | `/v1/research` | Pedro-native research, streamed as SSE |
 
@@ -101,3 +115,21 @@ Without `PEDRO_SERVER_URL` the TUI works standalone (no server needed).
 `make_app(db_path, base_url, ...)` factory creates the FastAPI app with injected config — used by `pedro serve` and by tests (which inject an in-memory ChromaDB collection without touching the filesystem).
 
 Sync pipeline functions (`run_ask`, `research`) run in a `ThreadPoolExecutor`. Callbacks (`on_token`, `log_fn`) push events into an `asyncio.Queue` that the SSE generator drains.
+
+## Server Configuration
+
+The server uses the following environment variables for model configuration:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LLM_MODEL` | `mistral:7b` | Quality model for research synthesis |
+| `ASK_LLM_MODEL` | `LLM_MODEL` | Model for `/v1/ask` endpoint (falls back to `LLM_MODEL`) |
+| `FAST_MODEL` | `LLM_MODEL` | Model for sub-questions, planning, reflection |
+| `EMBED_MODEL` | `nomic-embed-text` | Embedding model for retrieval |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+
+Set these before starting the server:
+
+```bash
+LLM_MODEL=command-r:35b ASK_LLM_MODEL=command-r:35b FAST_MODEL=mistral:7b pedro serve
+```

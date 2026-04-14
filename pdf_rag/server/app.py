@@ -182,7 +182,6 @@ def make_app(
     # ── pedro native endpoints ─────────────────────────────────────────────────
 
     @app.post("/v1/ask")
-    @app.get("/v1/ask")
     async def ask(req: AskRequest) -> StreamingResponse:
         return StreamingResponse(
             _stream_pedro(
@@ -199,7 +198,6 @@ def make_app(
         )
 
     @app.post("/v1/research")
-    @app.get("/v1/research")
     async def research_endpoint(req: ResearchRequest) -> StreamingResponse:
         return StreamingResponse(
             _stream_pedro(
