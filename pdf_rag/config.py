@@ -16,6 +16,7 @@ def _int(name: str, default: int) -> int:
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
 LLM_MODEL = os.getenv("LLM_MODEL", "mistral:7b")
+ASK_LLM_MODEL = os.getenv("ASK_LLM_MODEL", LLM_MODEL)
 FAST_MODEL = os.getenv("FAST_MODEL", LLM_MODEL)
 DB_PATH = os.getenv("DB_PATH", str(Path.home() / ".pdf-rag" / "chroma_db"))
 SESSIONS_PATH = Path(os.getenv("SESSIONS_PATH", str(Path.home() / ".pdf-rag" / "sessions")))

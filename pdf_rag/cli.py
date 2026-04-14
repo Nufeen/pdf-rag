@@ -54,7 +54,7 @@ def index(folder, db_path, embed_model, ollama_url, force):
 @cli.command()
 @click.argument("question")
 @click.option("--db-path", default=DB_PATH, show_default=True, help="ChromaDB storage path")
-@click.option("--model", default=LLM_MODEL, show_default=True, help="Ollama LLM model")
+@click.option("--model", default=ASK_LLM_MODEL, show_default=True, help="Ollama LLM model for ask")
 @click.option(
     "--embed-model", default=EMBED_MODEL, show_default=True, help="Ollama embedding model"
 )

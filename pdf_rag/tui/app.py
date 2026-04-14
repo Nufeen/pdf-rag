@@ -5,10 +5,10 @@ from textual.widgets import Footer, Input, RichLog, Static
 from textual.worker import Worker, get_current_worker
 
 from ..config import (
+    ASK_LLM_MODEL,
     DB_PATH,
     EMBED_MODEL,
     FAST_MODEL,
-    LLM_MODEL,
     OLLAMA_BASE_URL,
     PDF_EXPORT_PATH,
     RESEARCH_DEPTH,
@@ -111,7 +111,9 @@ class PedroApp(App):
         log = self.query_one("#output", RichLog)
         idx = _MODES.index(self.mode)
         self.mode = _MODES[(idx + 1) % len(_MODES)]
-        log.write(f"\n[bold cyan]>[/bold cyan] Mode changed to [bold cyan]{self.mode}[/bold cyan]\n")
+        log.write(
+            f"\n[bold cyan]>[/bold cyan] Mode changed to [bold cyan]{self.mode}[/bold cyan]\n"
+        )
 
     def action_history_prev(self) -> None:
         if not self._history:
@@ -227,7 +229,11 @@ class PedroApp(App):
                 stream_ask(
                     server_url=SERVER_URL,
                     question=question,
-                    params={"llm_model": LLM_MODEL, "embed_model": EMBED_MODEL, "top_k": self.top_k},
+                    params={
+                        "llm_model": ASK_LLM_MODEL,
+                        "embed_model": EMBED_MODEL,
+                        "top_k": self.top_k,
+                    },
                     on_token=emit,
                     log_fn=log_fn,
                     check=check,
@@ -237,7 +243,7 @@ class PedroApp(App):
                     question=question,
                     db_path=DB_PATH,
                     base_url=OLLAMA_BASE_URL,
-                    llm_model=LLM_MODEL,
+                    llm_model=ASK_LLM_MODEL,
                     embed_model=EMBED_MODEL,
                     top_k=self.top_k,
                     log_fn=log_fn,
@@ -326,4 +332,3 @@ class PedroApp(App):
             self.call_from_thread(log.write, "\n[yellow]Cancelled.[/yellow]\n")
         finally:
             self.call_from_thread(self._reenable_input)
-

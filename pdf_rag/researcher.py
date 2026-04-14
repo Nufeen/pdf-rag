@@ -7,11 +7,12 @@ from ollama import Client
 from chromadb import Collection
 
 from .config import (
+    ASK_LLM_MODEL,
     COLLECTION_NAME,
     DB_PATH,
-    LLM_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
+    LLM_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,

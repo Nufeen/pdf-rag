@@ -22,10 +22,11 @@ handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
 logger.addHandler(handler)
 
 from ..config import (
+    ASK_LLM_MODEL,
     DB_PATH,
-    LLM_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
+    LLM_MODEL,
     OLLAMA_BASE_URL,
     RESEARCH_DEPTH,
     RESEARCH_N_SUBQUESTIONS,
@@ -110,6 +111,7 @@ def _oai_stop(cid: str, created: int, model: str) -> str:
 def make_app(
     db_path: str = DB_PATH,
     base_url: str = OLLAMA_BASE_URL,
+    ask_llm_model: str = ASK_LLM_MODEL,
     llm_model: str = LLM_MODEL,
     fast_model: str = FAST_MODEL,
     embed_model: str = EMBED_MODEL,
@@ -188,7 +190,7 @@ def make_app(
                 question=req.question,
                 db_path=db_path,
                 base_url=base_url,
-                llm_model=req.llm_model or llm_model,
+                llm_model=req.llm_model or ask_llm_model,
                 embed_model=req.embed_model or embed_model,
                 top_k=req.top_k or top_k,
                 show_sources=req.show_sources,
