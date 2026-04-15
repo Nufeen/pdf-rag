@@ -3,6 +3,7 @@ import click
 from .config import (
     DB_PATH,
     LLM_MODEL,
+    ASK_LLM_MODEL,
     EMBED_MODEL,
     FAST_MODEL,
     OLLAMA_BASE_URL,

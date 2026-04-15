@@ -5,6 +5,7 @@ from textual.widgets import Footer, Input, RichLog, Static
 from textual.worker import Worker, get_current_worker
 
 from ..config import (
+    LLM_MODEL,
     ASK_LLM_MODEL,
     DB_PATH,
     EMBED_MODEL,
@@ -98,7 +99,7 @@ class PedroApp(App):
     def _update_status(self) -> None:
         mode = self.mode
         if mode == "ask":
-            models = f"model: [dim]{LLM_MODEL}[/dim]"
+            models = f"model: [dim]{ASK_LLM_MODEL}[/dim]"
         else:
             models = f"llm: [dim]{LLM_MODEL}[/dim]  fast: [dim]{FAST_MODEL}[/dim]"
         self.query_one("#status", Static).update(
