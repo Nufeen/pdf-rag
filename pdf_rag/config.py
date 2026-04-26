@@ -14,6 +14,9 @@ def _int(name: str, default: int) -> int:
 
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+PROVIDER_TYPE = os.getenv("PROVIDER_TYPE", "ollama")  # "ollama" | "openai"
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
 LLM_MODEL = os.getenv("LLM_MODEL", "mistral:7b")
 ASK_LLM_MODEL = os.getenv("ASK_LLM_MODEL", LLM_MODEL)

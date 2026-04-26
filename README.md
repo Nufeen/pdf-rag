@@ -5,6 +5,7 @@ Local RAG (Retrieval-Augmented Generation) CLI for searching a folder of PDF boo
 Key ideas:
 
 - Base scenario is fully local usage — no cloud services. Ollama for embeddings and LLM inference, ChromaDB for vector storage.
+- OpenAI-compatible providers are also supported (vLLM, LM Studio, remote OpenAI, etc.) via `PROVIDER_TYPE=openai`
 - Keeping things as simple as it can be
 
 ## Getting Started
@@ -53,10 +54,10 @@ That's it. Re-run `pedro index ~/Books/` whenever you add new PDFs — only new 
 | -------------- | ----------------------------------- | -------------------------------------------------------- |
 | PDF extraction | PyMuPDF (`fitz`)                    | Fast, page-level metadata, handles most encodings        |
 | Chunking       | Custom recursive splitter           | Split on `\n\n` → `\n` → `.` → ` ` to preserve semantics |
-| Embeddings     | `nomic-embed-text` via Ollama       | See model recomendations below                           |
+| Embeddings     | `nomic-embed-text` via Ollama (default) or OpenAI-compatible endpoint | See model recommendations below |
 | Vector DB      | ChromaDB (embedded/persistent)      | No server, persists to disk, metadata filtering built-in |
-| LLM            | any via Ollama                      | See recomendations below                                 |
-| Ollama host    | Remote (local network)              | Set via `OLLAMA_BASE_URL=http://<host-ip>:11434`         |
+| LLM            | any via Ollama or OpenAI-compatible endpoint | See recommendations below                      |
+| Provider       | Ollama (default) or OpenAI-compatible | Switch via `PROVIDER_TYPE` env var                     |
 | CLI            | Click + Textual (adr 1 for details) | https://click.palletsprojects.com/en/stable/             |
 
 ## Testing
@@ -70,11 +71,12 @@ pdf-rag/
 ├── pdf_rag/
 │   ├── cli.py              # Click entry point — all commands
 │   ├── config.py           # Constants + env var overrides
+│   ├── provider.py         # LLM/embed provider abstraction (Ollama & OpenAI)
 │   ├── researcher.py       # Pipeline logic: run_ask(), research()
 │   ├── chunker.py          # Recursive text splitter
 │   ├── indexer.py          # PDF extraction, chunking, embedding, ChromaDB writes
 │   ├── retriever.py        # Query embedding + ChromaDB search
-│   ├── llm.py              # Prompt loading + Ollama streaming chat
+│   ├── llm.py              # Prompt loading + streaming chat
 │   ├── session_log.py      # JSONL session logging
 │   ├── tui/                # Textual TUI app
 │   │   ├── app.py          # PedroApp — layout, bindings, worker dispatch
@@ -107,6 +109,33 @@ On machine with project running, point to the remote Ollama host:
 ```bash
 export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 ```
+
+## OpenAI-compatible Providers
+
+Pedro supports any OpenAI-compatible endpoint alongside Ollama. This includes remote OpenAI, vLLM, LM Studio, and others.
+
+Set in `.env`:
+
+```bash
+PROVIDER_TYPE=openai
+OPENAI_BASE_URL=https://api.openai.com/v1   # or your local endpoint
+OPENAI_API_KEY=sk-...
+LLM_MODEL=gpt-4o
+FAST_MODEL=gpt-4o-mini
+EMBED_MODEL=text-embedding-3-small
+```
+
+For a local vLLM server:
+
+```bash
+PROVIDER_TYPE=openai
+OPENAI_BASE_URL=http://localhost:8000/v1
+OPENAI_API_KEY=not-needed
+LLM_MODEL=mistralai/Mistral-7B-Instruct-v0.3
+EMBED_MODEL=BAAI/bge-small-en-v1.5
+```
+
+When `PROVIDER_TYPE=ollama` (the default), all behaviour is identical to before — `OPENAI_*` variables are ignored.
 
 ## Local Model Recommendations (actual for apr 2026)
 
@@ -433,9 +462,12 @@ pedro index ~/Books/ --force
 
 | Variable                  | Default                  | Description                                                                                 |
 | ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------- |
-| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL                                                                             |
+| `PROVIDER_TYPE`           | `ollama`                 | LLM provider: `ollama` or `openai`                                                          |
+| `OLLAMA_BASE_URL`         | `http://localhost:11434` | Ollama host URL (used when `PROVIDER_TYPE=ollama`)                                          |
+| `OPENAI_BASE_URL`         | `https://api.openai.com/v1` | OpenAI-compatible endpoint (used when `PROVIDER_TYPE=openai`)                            |
+| `OPENAI_API_KEY`          | `` (empty)               | API key sent as `Bearer` token (used when `PROVIDER_TYPE=openai`)                           |
 | `DB_PATH`                 | `~/.pdf-rag/chroma_db`   | ChromaDB storage path                                                                       |
-| `EMBED_MODEL`             | `nomic-embed-text`       | Ollama embedding model (recommend `mxbai-embed-large`)                                      |
+| `EMBED_MODEL`             | `nomic-embed-text`       | Embedding model name (recommend `mxbai-embed-large` for Ollama, `text-embedding-3-small` for OpenAI) |
 | `LLM_MODEL`               | `mistral:7b`             | Quality model — final research synthesis (recommend `command-r:35b`)                        |
 | `ASK_LLM_MODEL`           | `LLM_MODEL`              | Model for `ask` command — defaults to `LLM_MODEL` if unset                                  |
 | `FAST_MODEL`              | `LLM_MODEL`              | Intermediate model — sub-questions, planning, reflection (3B–7B recommended)                |

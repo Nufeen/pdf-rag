@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 
-from ollama import Client
-
 from .config import FAST_MODEL, OLLAMA_BASE_URL
 from .llm import load_prompt
+from .provider import make_client
 
 
 @dataclass
@@ -15,12 +14,12 @@ class SessionContext:
         self,
         question: str,
         answer: str,
-        client: Client | None = None,
+        client=None,
         base_url: str = OLLAMA_BASE_URL,
         model: str = FAST_MODEL,
     ) -> str:
         if client is None:
-            client = Client(host=base_url)
+            client = make_client(base_url)
 
         prompt = load_prompt(
             "update_session_summary",

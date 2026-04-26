@@ -1,9 +1,8 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from ollama import Client
-
 from .config import LLM_MODEL, OLLAMA_BASE_URL
+from .provider import make_client
 
 
 _PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
@@ -51,7 +50,7 @@ def generate_answer(
         "Answer (cite sources as [Book: filename, Page: N]):"
     )
 
-    client = Client(host=base_url)
+    client = make_client(base_url)
     try:
         response = client.chat(
             model=llm_model,
@@ -81,6 +80,6 @@ def generate_answer(
     except Exception as e:
         if "connection" in str(e).lower() or "refused" in str(e).lower():
             raise SystemExit(
-                f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?"
+                f"Cannot reach LLM provider at {base_url}. Check your provider settings."
             )
         raise

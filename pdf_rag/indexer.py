@@ -4,7 +4,6 @@ from pathlib import Path
 import chromadb
 import click
 import fitz  # PyMuPDF
-import requests
 from tqdm import tqdm
 
 from .chunker import split_text
@@ -18,6 +17,7 @@ from .config import (
     EMBED_MODEL,
     OLLAMA_BASE_URL,
 )
+from . import provider
 
 def compute_file_hash(path: str) -> str:
     h = hashlib.sha256()
@@ -38,17 +38,7 @@ def extract_pages(pdf_path: str) -> list[dict]:
 
 
 def batch_embed(texts: list[str], model: str, base_url: str, batch_size: int = EMBED_BATCH_SIZE) -> list[list[float]]:
-    embeddings = []
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i : i + batch_size]
-        resp = requests.post(
-            f"{base_url}/api/embed",
-            json={"model": model, "input": batch},
-            timeout=120,
-        )
-        resp.raise_for_status()
-        embeddings.extend(resp.json()["embeddings"])
-    return embeddings
+    return provider.embed(texts, model, base_url, batch_size)
 
 
 def chunk_id(source_file: str, page_num: int, chunk_idx: int) -> str:
@@ -114,26 +104,13 @@ def index_folder(
         texts = [c["text"] for c in all_chunks]
 
         print(f"Embedding: {pdf_path.name} ({len(all_chunks)} chunks)...")
-        embeddings = []
-        embed_failed = False
-        for i in tqdm(range(0, len(texts), EMBED_BATCH_SIZE), unit="batch", leave=False):
-            batch = texts[i : i + EMBED_BATCH_SIZE]
-            try:
-                resp = requests.post(
-                    f"{base_url}/api/embed",
-                    json={"model": embed_model, "input": batch},
-                    timeout=120,
-                )
-                resp.raise_for_status()
-                embeddings.extend(resp.json()["embeddings"])
-            except requests.exceptions.ConnectionError as e:
-                raise SystemExit(f"Cannot reach Ollama at {base_url}. Is it running and is OLLAMA_BASE_URL correct?\nError: {e}")
-            except requests.exceptions.HTTPError as e:
-                click.echo(click.style(f"Warning: skipping {pdf_path.name} — embed API error (batch {i // EMBED_BATCH_SIZE + 1}): {e}", fg="yellow"))
-                embed_failed = True
-                break
-
-        if embed_failed:
+        try:
+            embeddings = batch_embed(texts, embed_model, base_url)
+        except Exception as e:
+            msg = str(e)
+            if "connection" in msg.lower() or "refused" in msg.lower():
+                raise SystemExit(f"Cannot reach embed provider at {base_url}. Check your provider settings.\nError: {e}")
+            click.echo(click.style(f"Warning: skipping {pdf_path.name} — embed error: {e}", fg="yellow"))
             continue
 
         ids = [

@@ -3,7 +3,6 @@ from collections.abc import Callable
 
 import chromadb
 import click
-from ollama import Client
 from chromadb import Collection
 
 from .config import (
@@ -22,6 +21,7 @@ from .config import (
 )
 from .context_manager import SessionContext
 from .llm import generate_answer, load_prompt
+from .provider import make_client
 from .retriever import query
 
 
@@ -44,7 +44,7 @@ def _parse_questions(text: str) -> list[str]:
 
 
 def plan_subquestions(
-    question: str, n: int, client: Client, model: str, covered: list[str] = []
+    question: str, n: int, client, model: str, covered: list[str] = []
 ) -> list[str]:
     covered_text = "\n".join(f"- {q}" for q in covered) if covered else "(none)"
     prompt = load_prompt("plan_subquestions", n=str(n), question=question, covered=covered_text)
@@ -59,7 +59,7 @@ def plan_subquestions(
     return lines[:n]
 
 
-def reflect(question: str, answer: str, client: Client, model: str) -> list[str] | None:
+def reflect(question: str, answer: str, client, model: str) -> list[str] | None:
     prompt = load_prompt("reflect", question=question, answer=answer)
     response = client.chat(
         model=model,
@@ -92,7 +92,7 @@ def _stream_response(
 def synthesize(
     question: str,
     findings: list[dict],
-    client: Client,
+    client,
     model: str,
     base_url: str,
     stream: bool = True,
@@ -117,12 +117,12 @@ def synthesize(
     except Exception as e:
         if "connection" in str(e).lower() or "refused" in str(e).lower():
             raise SystemExit(
-                f"Cannot reach Ollama at {base_url}. Is it running and OLLAMA_BASE_URL correct?"
+                f"Cannot reach LLM provider at {base_url}. Check your provider settings."
             )
         raise
 
 
-def translate_question(text: str, lang: str, client: Client, model: str) -> str:
+def translate_question(text: str, lang: str, client, model: str) -> str:
     prompt = load_prompt("translate_question", text=text, lang=lang)
     response = client.chat(
         model=model,
@@ -140,7 +140,7 @@ def retrieve_multilingual(
     top_k: int,
     languages: list[str],
     translate_model: str,
-    client: Client,
+    client,
     log_fn: Callable[[str], None] | None = None,
 ) -> list[dict]:
     chunks = query(question, collection, embed_model, base_url, top_k)
@@ -201,7 +201,7 @@ def research(
     subq = (lambda i, total, text: log_fn(f"  [{i}/{total}] {text}")) if log_fn else _subq
 
     collection = _open_collection(db_path)
-    client = Client(host=base_url)
+    client = make_client(base_url)
     all_findings: list[dict] = []
     answer_finalized = False
 
@@ -337,5 +337,5 @@ def run_ask(
         session_context=session_ctx.summary if session_ctx else "",
     )
     if session_ctx and answer:
-        session_ctx.update(question, answer, client=Client(host=base_url), model=llm_model)
+        session_ctx.update(question, answer, client=make_client(base_url), model=llm_model)
     return answer
