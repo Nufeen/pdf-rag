@@ -136,14 +136,21 @@ def _openai_embed(texts: list[str], model: str, batch_size: int) -> list[list[fl
         if isinstance(body, list):
             if body and isinstance(body[0], dict):
                 data = sorted(body, key=lambda x: x.get("index", 0))
-                embeddings.extend(item["embedding"] for item in data)
+                embeddings.extend(_unwrap(item["embedding"]) for item in data)
             else:
-                embeddings.extend(body)
+                embeddings.extend(_unwrap(v) for v in body)
         elif "data" in body:
             data = sorted(body["data"], key=lambda x: x.get("index", 0))
-            embeddings.extend(item["embedding"] for item in data)
+            embeddings.extend(_unwrap(item["embedding"]) for item in data)
         elif "embeddings" in body:
-            embeddings.extend(body["embeddings"])
+            embeddings.extend(_unwrap(v) for v in body["embeddings"])
         else:
             raise ValueError(f"Unrecognised embeddings response format: {list(body.keys())}")
     return embeddings
+
+
+def _unwrap(vec):
+    """Flatten one level of extra nesting some servers add: [[...]] → [...]."""
+    if vec and isinstance(vec[0], list):
+        return vec[0]
+    return vec
