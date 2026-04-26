@@ -130,6 +130,16 @@ def _openai_embed(texts: list[str], model: str, batch_size: int) -> list[list[fl
             timeout=120,
         )
         resp.raise_for_status()
-        data = sorted(resp.json()["data"], key=lambda x: x["index"])
-        embeddings.extend(item["embedding"] for item in data)
+        body = resp.json()
+        # Standard OpenAI: {"data": [{"embedding": [...], "index": N}, ...]}
+        # Some servers return a bare list of vectors or {"embeddings": [...]}
+        if isinstance(body, list):
+            embeddings.extend(body)
+        elif "data" in body:
+            data = sorted(body["data"], key=lambda x: x.get("index", 0))
+            embeddings.extend(item["embedding"] for item in data)
+        elif "embeddings" in body:
+            embeddings.extend(body["embeddings"])
+        else:
+            raise ValueError(f"Unrecognised embeddings response format: {list(body.keys())}")
     return embeddings
