@@ -15,7 +15,9 @@ def query(
         query_embedding = embed([question], embed_model, base_url)[0]
     except Exception as e:
         if "connection" in str(e).lower() or "refused" in str(e).lower():
-            raise SystemExit(f"Cannot reach embed provider at {base_url}. Check your provider settings.\nError: {e}")
+            from .config import OPENAI_BASE_URL, PROVIDER_TYPE
+            url = OPENAI_BASE_URL if PROVIDER_TYPE == "openai" else base_url
+            raise SystemExit(f"Cannot reach embed provider at {url}. Check your provider settings.\nError: {e}")
         raise
 
     results = collection.query(

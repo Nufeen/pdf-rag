@@ -109,7 +109,9 @@ def index_folder(
         except Exception as e:
             msg = str(e)
             if "connection" in msg.lower() or "refused" in msg.lower():
-                raise SystemExit(f"Cannot reach embed provider at {base_url}. Check your provider settings.\nError: {e}")
+                from .config import OPENAI_BASE_URL, PROVIDER_TYPE
+                url = OPENAI_BASE_URL if PROVIDER_TYPE == "openai" else base_url
+                raise SystemExit(f"Cannot reach embed provider at {url}. Check your provider settings.\nError: {e}")
             click.echo(click.style(f"Warning: skipping {pdf_path.name} — embed error: {e}", fg="yellow"))
             continue
 
