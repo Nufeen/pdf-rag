@@ -132,9 +132,13 @@ def _openai_embed(texts: list[str], model: str, batch_size: int) -> list[list[fl
         resp.raise_for_status()
         body = resp.json()
         # Standard OpenAI: {"data": [{"embedding": [...], "index": N}, ...]}
-        # Some servers return a bare list of vectors or {"embeddings": [...]}
+        # Some servers return a bare list of dicts or raw vectors, or {"embeddings": [...]}
         if isinstance(body, list):
-            embeddings.extend(body)
+            if body and isinstance(body[0], dict):
+                data = sorted(body, key=lambda x: x.get("index", 0))
+                embeddings.extend(item["embedding"] for item in data)
+            else:
+                embeddings.extend(body)
         elif "data" in body:
             data = sorted(body["data"], key=lambda x: x.get("index", 0))
             embeddings.extend(item["embedding"] for item in data)

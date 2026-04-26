@@ -2,6 +2,7 @@ import pytest
 import responses as resp_lib
 import chromadb
 from unittest.mock import patch
+import pdf_rag.provider as _provider
 
 FAKE_VECTOR = [0.1, 0.2, 0.3, 0.4]
 OLLAMA_URL = "http://test-ollama:11434"
@@ -42,6 +43,12 @@ def seeded_collection():
         metadatas=[{k: v for k, v in c.items() if k != "text"} for c in FAKE_CHUNKS],
     )
     return col
+
+
+@pytest.fixture(autouse=True)
+def force_ollama_provider(monkeypatch):
+    """Force PROVIDER_TYPE=ollama so tests are not affected by local .env."""
+    monkeypatch.setattr(_provider, "PROVIDER_TYPE", "ollama")
 
 
 @pytest.fixture()
