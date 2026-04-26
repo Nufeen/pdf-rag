@@ -114,25 +114,12 @@ export OLLAMA_BASE_URL=http://192.168.1.X:11434   # replace with actual IP
 
 Pedro supports any OpenAI-compatible endpoint alongside Ollama. This includes remote OpenAI, vLLM, LM Studio, and others.
 
-Set in `.env`:
+See example in `.env.openai.example`
+
+For a local vLLM/llana.cpp server set any api key:
 
 ```bash
-PROVIDER_TYPE=openai
-OPENAI_BASE_URL=https://api.openai.com/v1   # or your local endpoint
-OPENAI_API_KEY=sk-...
-LLM_MODEL=gpt-4o
-FAST_MODEL=gpt-4o-mini
-EMBED_MODEL=text-embedding-3-small
-```
-
-For a local vLLM server:
-
-```bash
-PROVIDER_TYPE=openai
-OPENAI_BASE_URL=http://localhost:8000/v1
 OPENAI_API_KEY=not-needed
-LLM_MODEL=mistralai/Mistral-7B-Instruct-v0.3
-EMBED_MODEL=BAAI/bge-small-en-v1.5
 ```
 
 When `PROVIDER_TYPE=ollama` (the default), all behaviour is identical to before — `OPENAI_*` variables are ignored.
